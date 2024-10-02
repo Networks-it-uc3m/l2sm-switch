@@ -5,21 +5,15 @@ An open virtual switch implementation written in Go, designed for use within the
 ## Table of Contents
 
 - [Features](#features)
-- [Project Structure](#project-structure)
 - [Installation](#installation)
   - [Prerequisites](#prerequisites)
   - [Building from Source](#building-from-source)
   - [Building the Docker Image](#building-the-docker-image)
 - [Usage](#usage)
-  - [CLI Tools](#cli-tools)
   - [Running the gRPC Server](#running-the-grpc-server)
   - [Sample Configuration](#sample-configuration)
-- [Configuration](#configuration)
-- [Makefile Targets](#makefile-targets)
-- [Setup Scripts](#setup-scripts)
 - [Contributing](#contributing)
 - [License](#license)
-- [Acknowledgments](#acknowledgments)
 
 ## Features
 
@@ -131,14 +125,6 @@ make sample-config
 
 The neighbors.json contains an array that must be filled manually with the ip addresses of every neighbour you want to initially attach the ned to. 
 
-
-
-### Setup Scripts
-
-- **setup_switch.sh**: Sets up the OVS switch upon container startup.
-- **setup_ned.sh**: Configures the network edge device.
-
-These scripts are copied into the Docker image and executed as part of the container initialization.
 
 ## Contributing
 
