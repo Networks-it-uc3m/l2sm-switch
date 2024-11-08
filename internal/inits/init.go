@@ -3,11 +3,12 @@ package inits
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"regexp"
 
-	topo "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	switchv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
 )
 
@@ -55,7 +56,7 @@ Example:
 				"neighborNodes":["10.4.2.3","10.4.2.5"]
 			}
 */
-func ConnectToNeighbors(bridge ovs.Bridge, node topo.Node) error {
+func ConnectToNeighbors(bridge ovs.Bridge, node switchv1.Node) error {
 	for vxlanNumber, neighborIp := range node.NeighborNodes {
 		vxlanId := fmt.Sprintf("vxlan%d", vxlanNumber)
 		err := bridge.CreateVxlan(ovs.Vxlan{VxlanId: vxlanId, LocalIp: node.NodeIP, RemoteIp: neighborIp, UdpPort: "7000"})
@@ -67,4 +68,71 @@ func ConnectToNeighbors(bridge ovs.Bridge, node topo.Node) error {
 		}
 	}
 	return nil
+}
+
+/*
+*
+Example:
+
+	{
+	    "Nodes": [
+	        {
+	            "name": "l2sm1",
+	            "nodeIP": "10.1.14.53"
+	        },
+	        {
+	            "name": "l2sm2",
+	            "nodeIP": "10.1.14.90"
+	        }
+	    ],
+	    "Links": [
+	        {
+	            "endpointA": "l2sm1",
+	            "endpointB": "l2sm2"
+	        }
+	    ]
+	}
+*/
+func CreateTopology(bridge ovs.Bridge, topology switchv1.Topology, nodeName string) error {
+
+	nodeMap := make(map[string]string)
+	for _, node := range topology.Nodes {
+		var nodeIP string
+		if net.ParseIP(nodeIP) != nil {
+			nodeIP = node.NodeIP
+		} else {
+			ips, err := net.LookupHost(node.NodeIP)
+			if err != nil || len(ips) == 0 {
+				fmt.Printf("Failed to resolve %s\n", node.NodeIP)
+				continue
+			}
+			nodeIP = ips[0]
+		}
+		nodeMap[node.Name] = nodeIP
+	}
+
+	localIp := nodeMap[nodeName]
+
+	for vxlanNumber, link := range topology.Links {
+		vxlanId := fmt.Sprintf("vxlan%d", vxlanNumber)
+		var remoteIp string
+		switch nodeName {
+		case link.EndpointNodeA:
+			remoteIp = nodeMap[link.EndpointNodeB]
+		case link.EndpointNodeB:
+			remoteIp = nodeMap[link.EndpointNodeA]
+		default:
+			continue
+		}
+		err := bridge.CreateVxlan(ovs.Vxlan{VxlanId: vxlanId, LocalIp: localIp, RemoteIp: remoteIp, UdpPort: "7000"})
+
+		if err != nil {
+			return fmt.Errorf("could not create vxlan between node %s and node %s. Error:%s", link.EndpointNodeA, link.EndpointNodeB, err)
+		} else {
+			fmt.Printf("Created vxlan between node %s and node %s.\n", link.EndpointNodeA, link.EndpointNodeB)
+		}
+
+	}
+	return nil
+
 }

@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 
 	// Adjust the import path based on your module path
-	nedv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	switchv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 
 	"github.com/Networks-it-uc3m/l2sm-switch/internal/inits"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/nedpb"
@@ -20,15 +20,11 @@ import (
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 )
 
-const (
-	DEFAULT_CONFIG_PATH = "/etc/l2sm"
-)
-
 // server is used to implement nedpb.VxlanServiceServer
 type server struct {
 	nedpb.UnimplementedNedServiceServer
 	Bridge   ovs.Bridge
-	Settings nedv1.NedSettings
+	Settings switchv1.NedSettings
 }
 
 func main() {
@@ -39,7 +35,7 @@ func main() {
 		return
 	}
 
-	var settings nedv1.NedSettings
+	var settings switchv1.NedSettings
 	err = inits.ReadFile(configDir, &settings)
 
 	if err != nil {
@@ -54,7 +50,7 @@ func main() {
 		log.Fatalf("error initializing ned: %v", err)
 	}
 
-	var node nedv1.Node
+	var node switchv1.Node
 	err = inits.ReadFile(neighborsDir, &node)
 
 	if err != nil {
@@ -166,8 +162,8 @@ func AddInterfaceToBridge(bridgeName string) (string, error) {
 
 func takeArguments() (string, string, error) {
 
-	configDir := flag.String("config_dir", fmt.Sprintf("%s/config.json", DEFAULT_CONFIG_PATH), "directory where the ned settings are specified. Required")
-	neighborsDir := flag.String("neighbors_dir", fmt.Sprintf("%s/neighbors.json", DEFAULT_CONFIG_PATH), "directory where the ned's neighbors  are specified. Required")
+	configDir := flag.String("config_dir", fmt.Sprintf("%s/config.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the ned settings are specified. Required")
+	neighborsDir := flag.String("neighbors_dir", fmt.Sprintf("%s/neighbors.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the ned's neighbors  are specified. Required")
 
 	flag.Parse()
 
