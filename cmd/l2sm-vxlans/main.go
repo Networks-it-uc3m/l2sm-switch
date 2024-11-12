@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 
@@ -18,13 +19,17 @@ func main() {
 	//configDir, _, fileType, err := takeArguments()
 
 	// configDir, nodeName, fileType, err := takeArguments()
-	configDir, topologyDir := takeArguments()
+	configDir, topologyDir, nodeName, err := takeArguments()
 
+	if err != nil {
+		fmt.Println("Error with the arguments provided. Error:", err)
+		return
+	}
 	bridge := ovs.FromName("brtun")
 
 	var topology switchv1.Topology
 
-	err := inits.ReadFile(topologyDir, &topology)
+	err = inits.ReadFile(topologyDir, &topology)
 
 	if err != nil {
 		fmt.Println("Error with the provided file. Error:", err)
@@ -40,15 +45,20 @@ func main() {
 		return
 	}
 
-	err = inits.CreateTopology(bridge, topology, config.NodeName)
+	err = inits.CreateTopology(bridge, topology, nodeName)
 }
 
-func takeArguments() (string, string) {
+func takeArguments() (string, string, string, error) {
 
 	configDir := flag.String("config_dir", fmt.Sprintf("%s/config.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the ned settings are specified. Required")
 	neighborsDir := flag.String("neighbors_dir", fmt.Sprintf("%s/neighbors.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the ned's neighbors  are specified. Required")
-
+	nodeName := flag.String("node_name", "", "name of the node the script is executed in. Required.")
 	flag.Parse()
 
-	return *configDir, *neighborsDir
+	switch {
+	case *nodeName == "":
+		return "", "", "", errors.New("node name is not defined")
+	}
+
+	return *configDir, *neighborsDir, *nodeName, nil
 }

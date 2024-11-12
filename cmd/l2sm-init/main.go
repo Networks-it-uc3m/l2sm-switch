@@ -16,7 +16,7 @@ import (
 // the second one is the path to the configuration file, in reference to the code.
 func main() {
 
-	configDir, _, _, _ := takeArguments()
+	configDir, _, _, switchName := takeArguments()
 
 	var settings switchv1.OverlaySettings
 
@@ -29,7 +29,7 @@ func main() {
 
 	fmt.Println("Initializing switch, connected to controller: ", settings.ControllerIp)
 
-	bridge, err := initializeSwitch(settings.NodeName, settings.ControllerIp)
+	bridge, err := initializeSwitch(switchName, settings.ControllerIp)
 
 	if err != nil {
 

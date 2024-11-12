@@ -14,5 +14,5 @@ type NedSettings struct {
 type OverlaySettings struct {
 	ControllerIp     string
 	InterfacesNumber int
-	NodeName         string
+	OverlayName      string
 }
