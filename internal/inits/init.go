@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"time"
 
 	switchv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
@@ -98,12 +99,12 @@ func CreateTopology(bridge ovs.Bridge, topology switchv1.Topology, nodeName stri
 	nodeMap := make(map[string]string)
 	for _, node := range topology.Nodes {
 		var nodeIP string
-		if net.ParseIP(nodeIP) != nil {
+		if parsedIP := net.ParseIP(node.NodeIP); parsedIP != nil {
 			nodeIP = node.NodeIP
 		} else {
-			ips, err := net.LookupHost(node.NodeIP)
-			if err != nil || len(ips) == 0 {
-				fmt.Printf("Failed to resolve %s\n", node.NodeIP)
+			ips, err := resolveWithRetry(node.NodeIP, 300)
+			if err != nil {
+				fmt.Printf("Failed to resolve %s after retries: %v\n", node.NodeIP, err)
 				continue
 			}
 			nodeIP = ips[0]
@@ -135,4 +136,20 @@ func CreateTopology(bridge ovs.Bridge, topology switchv1.Topology, nodeName stri
 	}
 	return nil
 
+}
+
+func resolveWithRetry(host string, maxDelay int) ([]string, error) {
+	for i := 1; i <= maxDelay; i = i * 2 {
+		if i > maxDelay {
+			i = maxDelay
+		}
+		fmt.Printf("Retrying service resolution for %s, next retry in: %ds\n", host, i)
+		time.Sleep(time.Duration(i) * time.Second)
+
+		ips, err := net.LookupHost(host)
+		if err == nil && len(ips) > 0 {
+			return ips, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to resolve host: %s", host)
 }
