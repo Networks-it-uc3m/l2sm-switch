@@ -51,7 +51,7 @@ func main() {
 func takeArguments() (string, string, string, error) {
 
 	configDir := flag.String("config_dir", fmt.Sprintf("%s/config.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the ned settings are specified. Required")
-	neighborsDir := flag.String("neighbors_dir", fmt.Sprintf("%s/neighbors.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the ned's neighbors  are specified. Required")
+	topologyDir := flag.String("topology_dir", fmt.Sprintf("%s/topology.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the ned's neighbors  are specified. Required")
 	nodeName := flag.String("node_name", "", "name of the node the script is executed in. Required.")
 	flag.Parse()
 
@@ -60,5 +60,5 @@ func takeArguments() (string, string, string, error) {
 		return "", "", "", errors.New("node name is not defined")
 	}
 
-	return *configDir, *neighborsDir, *nodeName, nil
+	return *configDir, *topologyDir, *nodeName, nil
 }
