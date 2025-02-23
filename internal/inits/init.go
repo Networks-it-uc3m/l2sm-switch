@@ -13,7 +13,7 @@ import (
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
 )
 
-func InitializeSwitch(switchName, controllerIP, controllerPort string) (ovs.Bridge, error) {
+func InitializeSwitch(nodeName, switchName, controllerIP, controllerPort string) (ovs.Bridge, error) {
 
 	re := regexp.MustCompile(`\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b`)
 
@@ -26,7 +26,7 @@ func InitializeSwitch(switchName, controllerIP, controllerPort string) (ovs.Brid
 	}
 	controller := fmt.Sprintf("tcp:%s:%s", controllerIP, controllerPort)
 
-	datapathId := ovs.GenerateDatapathID(switchName)
+	datapathId := ovs.GenerateDatapathID(nodeName)
 	bridge, err := ovs.NewBridge(ovs.Bridge{Name: switchName, Controller: controller, Protocol: "OpenFlow13", DatapathId: datapathId})
 
 	return bridge, err
