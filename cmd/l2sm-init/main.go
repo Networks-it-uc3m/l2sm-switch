@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("Initializing switch, connected to controller: ", settings.ControllerIp)
+	fmt.Println("Initializing switch, connecting to controller: ", settings.ControllerIp)
 
 	bridge, err := inits.InitializeSwitch(switchName, settings.ControllerIp, settings.ControllerPort)
 
@@ -43,7 +43,7 @@ func main() {
 			fmt.Println("Error:", err)
 		}
 	}
-	fmt.Printf("Switch initialized, current state: ", bridge)
+	fmt.Printf("\nSwitch initialized, current state: %v", bridge)
 }
 
 func takeArguments() (string, int, string, string) {
