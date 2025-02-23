@@ -5,14 +5,16 @@ const (
 )
 
 type NedSettings struct {
-	ConfigDir    string
-	ControllerIP string
-	NodeName     string
-	NedName      string
+	ConfigDir      string
+	ControllerIP   string
+	ControllerPort string
+	NodeName       string
+	NedName        string
 }
 
 type OverlaySettings struct {
 	ControllerIp     string
+	ControllerPort   string
 	InterfacesNumber int
 	OverlayName      string
 }

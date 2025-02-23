@@ -3,12 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os/exec"
-	"regexp"
 
 	switchv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/internal/inits"
-	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
 )
 
 // Script that takes two required arguments:
@@ -29,7 +26,7 @@ func main() {
 
 	fmt.Println("Initializing switch, connected to controller: ", settings.ControllerIp)
 
-	bridge, err := initializeSwitch(switchName, settings.ControllerIp)
+	bridge, err := inits.InitializeSwitch(switchName, settings.ControllerIp, settings.ControllerPort)
 
 	if err != nil {
 
@@ -59,20 +56,4 @@ func takeArguments() (string, int, string, string) {
 	flag.Parse()
 
 	return *configDir, *vethNumber, *controllerIP, *switchName
-}
-
-func initializeSwitch(switchName, controllerIP string) (ovs.Bridge, error) {
-
-	re := regexp.MustCompile(`\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b`)
-	if !re.MatchString(controllerIP) {
-		out, _ := exec.Command("host", controllerIP).Output()
-		controllerIP = re.FindString(string(out))
-	}
-
-	controller := fmt.Sprintf("tcp:%s:6633", controllerIP)
-
-	datapathId := ovs.GenerateDatapathID(switchName)
-	bridge, err := ovs.NewBridge(ovs.Bridge{Name: "brtun", Controller: controller, Protocol: "OpenFlow13", DatapathId: datapathId})
-
-	return bridge, err
 }

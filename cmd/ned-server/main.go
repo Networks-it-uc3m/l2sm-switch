@@ -45,7 +45,7 @@ func main() {
 
 	fmt.Println("Initializing switch, connected to controller: ", settings.ControllerIP)
 
-	bridge, err := inits.InitializeSwitch(settings.NedName, settings.ControllerIP)
+	bridge, err := inits.InitializeSwitch(settings.NedName, settings.ControllerIP, settings.ControllerPort)
 	if err != nil {
 		log.Fatalf("error initializing ned: %v", err)
 	}
