@@ -5,23 +5,15 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
-	"regexp"
 	"time"
 
 	switchv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
 )
 
-func InitializeSwitch(switchName, controllerIP string) (ovs.Bridge, error) {
+func InitializeSwitch(switchName, controllerIP, controllerPort string) (ovs.Bridge, error) {
 
-	re := regexp.MustCompile(`\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b`)
-	if !re.MatchString(controllerIP) {
-		out, _ := exec.Command("host", controllerIP).Output()
-		controllerIP = re.FindString(string(out))
-	}
-
-	controller := fmt.Sprintf("tcp:%s:6633", controllerIP)
+	controller := fmt.Sprintf("tcp:%s:%s", controllerIP, controllerPort)
 
 	datapathId := ovs.GenerateDatapathID(switchName)
 	bridge, err := ovs.NewBridge(ovs.Bridge{Name: switchName, Controller: controller, Protocol: "OpenFlow13", DatapathId: datapathId})
