@@ -29,8 +29,8 @@ func main() {
 	bridge, err := inits.InitializeSwitch(
 		nodeName,
 		"brtun",
-		settings.ControllerIp,
 		settings.ControllerPort,
+		settings.ControllerIp,
 	)
 
 	if err != nil {

@@ -16,7 +16,7 @@ type Port struct {
 }
 
 type Bridge struct {
-	Controller string
+	Controller []string
 	Name       string
 	Protocol   string
 	DatapathId string
@@ -77,14 +77,14 @@ func NewBridge(bridgeConf Bridge) (Bridge, error) {
 
 	bridge.Protocol = bridgeConf.Protocol
 
-	err = exec.Command("ovs-vsctl", "set-controller", bridge.Name, bridgeConf.Controller).Run()
+	err = exec.Command("ovs-vsctl", "set-controller", bridge.Name, strings.Join(bridgeConf.Controller, " ")).Run()
 
 	if err != nil {
 		return bridge, fmt.Errorf("could not connect to controller: %v", err)
 
 	}
 
-	bridge.Controller = bridgeConf.Name
+	bridge.Controller = bridgeConf.Controller
 
 	return bridge, nil
 }
