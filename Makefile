@@ -2,8 +2,8 @@
 IMG ?= alexdecb/l2sm-switch:1.2.8
 
 # ENV variables for sample-config
-CONTROLLERIP ?= $(shell grep CONTROLLERIP .env | cut -d '=' -f2)
-NODENAME ?= $(shell grep NODENAME .env | cut -d '=' -f2)
+CONTROLLERIP ?= $(shell grep CONTROLLER_IP .env | cut -d '=' -f2)
+NODENAME ?= $(shell grep NODE_NAME .env | cut -d '=' -f2)
 NEDNAME ?= brtun
 
 # CONTAINER_TOOL defines the container tool to be used for building images.
@@ -57,8 +57,11 @@ generate-proto: ## Generate gRPC code from .proto file.
 
 .PHONY: sample-config
 sample-config: ## Create sample config.json if it doesn't exist.
-	echo "{\"ConfigDir\":\"\",\"ControllerIP\":\"$(CONTROLLERIP)\",\"NodeName\":\"$(NODENAME)\",\"NedName\":\"$(NEDNAME)\"}" > config/config.json; \
+	@mkdir -p config # Ensure the config directory exists
+	echo "{\"controllerPort\":\"6633\",\"controllerIp\":[\"$(CONTROLLERIP)\"],\"nodeName\":\"$(NODENAME)\",\"switchName\":\"$(NEDNAME)\"}" > config/config.json; \
 	echo "{\"name\":\"$(NODENAME)\",\"nodeIP\":\"$(CONTROLLERIP)\",\"neighborNodes\":[\"\"]}" > config/neighbors.json; \
+	echo "{\"Nodes\":[{\"name\":\"node1\",\"nodeIP\":\"10.0.0.1\",\"neighborNodes\":[\"node2\"]},{\"name\":\"node2\",\"nodeIP\":\"10.0.0.2\",\"neighborNodes\":[\"node1\",\"node3\"]},{\"name\":\"node3\",\"nodeIP\":\"10.0.0.3\",\"neighborNodes\":[\"node2\"]}],\"Links\":[{\"endpointA\":\"node1\",\"endpointB\":\"node2\"},{\"endpointA\":\"node2\",\"endpointB\":\"node3\"}]}" > config/topology.json;
+
 ##@ Run
 
 .PHONY: run
@@ -76,3 +79,8 @@ deploy-ovs: ## Deploy OVS server and switch.
 .PHONY: clean
 clean: ## Clean up OVS bridge.
 	sudo ovs-vsctl del-br brtun
+
+.PHONY: integration-test
+integration-test: ## Run OVS integration tests in Docker
+	$(CONTAINER_TOOL) build -t ovs-integration-test -f test/integration/Dockerfile .
+	$(CONTAINER_TOOL) run --privileged --rm ovs-integration-test
