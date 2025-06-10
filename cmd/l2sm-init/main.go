@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
 
-	switchv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/internal/inits"
+	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
 )
 
 // Script that takes two required arguments:
@@ -13,9 +15,10 @@ import (
 // the second one is the path to the configuration file, in reference to the code.
 func main() {
 
-	configDir, _, _, nodeName := takeArguments()
+	nodeName, bridgeName := takeArguments()
 
-	var settings switchv1.OverlaySettings
+	configDir := filepath.Join(plsv1.DEFAULT_CONFIG_PATH, plsv1.SETTINGS_FILE)
+	var settings plsv1.Settings
 
 	err := inits.ReadFile(configDir, &settings)
 
@@ -24,13 +27,13 @@ func main() {
 		return
 	}
 
-	fmt.Println("Initializing switch, connecting to controller: ", settings.ControllerIp)
+	fmt.Println("Initializing switch, connecting to controller: ", settings.ControllerIP)
 
-	bridge, err := inits.InitializeSwitch(
+	vSwitch, err := inits.ConfigureSwitch(
 		nodeName,
-		"brtun",
+		bridgeName,
 		settings.ControllerPort,
-		settings.ControllerIp,
+		settings.ControllerIP,
 	)
 
 	if err != nil {
@@ -41,24 +44,24 @@ func main() {
 
 	fmt.Println("Switch initialized and connected to the controller.")
 
+	ports := []plsv1.Port{}
 	// Set all virtual interfaces up, and connect them to the tunnel bridge:
 	for i := 1; i <= settings.InterfacesNumber; i++ {
-		veth := fmt.Sprintf("net%d", i)
-		if err := bridge.AddPort(veth); err != nil {
-			fmt.Println("Error:", err)
-		}
+		ports = append(ports, plsv1.Port{Name: fmt.Sprintf("net%d", i)})
 	}
-	fmt.Printf("\nSwitch initialized, current state: %v", bridge)
+	_, err = ovs.UpdateVirtualSwitch(ovs.WithName(bridgeName), ovs.WithPorts(ports))
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	fmt.Printf("\nSwitch initialized, current state: %v", vSwitch)
 }
 
-func takeArguments() (string, int, string, string) {
+func takeArguments() (string, string) {
 
-	vethNumber := flag.Int("n_veths", 0, "number of pod interfaces that are going to be attached to the switch")
-	controllerIP := flag.String("controller_ip", "", "ip where the SDN controller is listening using the OpenFlow13 protocol. ")
 	switchName := flag.String("switch_name", "", "name of the switch that will be used to set a custom datapath id. If not set, a randome datapath will be assigned")
-	configDir := flag.String("config_dir", fmt.Sprintf("%s/config.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the switch settings are specified. ")
+	bridgeName := flag.String("bridge_name", "brtun", "name of the ovs bridge.")
 
 	flag.Parse()
 
-	return *configDir, *vethNumber, *controllerIP, *switchName
+	return *switchName, *bridgeName
 }

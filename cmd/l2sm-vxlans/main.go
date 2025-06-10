@@ -4,11 +4,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"path/filepath"
 
-	switchv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/internal/inits"
-
-	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
 )
 
 // Script that takes two required arguments:
@@ -19,15 +18,17 @@ func main() {
 	//configDir, _, fileType, err := takeArguments()
 
 	// configDir, nodeName, fileType, err := takeArguments()
-	configDir, topologyDir, nodeName, err := takeArguments()
+	nodeName, bridgeName, err := takeArguments()
 
 	if err != nil {
 		fmt.Println("Error with the arguments provided. Error:", err)
 		return
 	}
-	bridge := ovs.FromName("brtun")
 
-	var topology switchv1.Topology
+	configDir := filepath.Join(plsv1.DEFAULT_CONFIG_PATH, plsv1.SETTINGS_FILE)
+	topologyDir := filepath.Join(plsv1.DEFAULT_CONFIG_PATH, plsv1.TOPOLOGY_FILE)
+
+	var topology plsv1.Topology
 
 	err = inits.ReadFile(topologyDir, &topology)
 
@@ -36,29 +37,33 @@ func main() {
 		return
 	}
 
-	var config switchv1.OverlaySettings
+	var settings plsv1.Settings
 
-	err = inits.ReadFile(configDir, &config)
+	err = inits.ReadFile(configDir, &settings)
 
 	if err != nil {
 		fmt.Println("Error with the provided file. Error:", err)
 		return
 	}
 
-	err = inits.CreateTopology(bridge, topology, nodeName)
+	err = inits.CreateTopology(bridgeName, topology, nodeName)
+
+	if err != nil {
+		fmt.Println("Error creating the topology. Error:", err)
+		return
+	}
 }
 
-func takeArguments() (string, string, string, error) {
+func takeArguments() (string, string, error) {
 
-	configDir := flag.String("config_dir", fmt.Sprintf("%s/config.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the ned settings are specified. Required")
-	topologyDir := flag.String("topology_dir", fmt.Sprintf("%s/topology.json", switchv1.DEFAULT_CONFIG_PATH), "directory where the ned's neighbors  are specified. Required")
 	nodeName := flag.String("node_name", "", "name of the node the script is executed in. Required.")
+	bridgeName := flag.String("bridge_name", "brtun", "name of the ovs bridge.")
 	flag.Parse()
 
 	switch {
 	case *nodeName == "":
-		return "", "", "", errors.New("node name is not defined")
+		return "", "", errors.New("node name is not defined")
 	}
 
-	return *configDir, *topologyDir, *nodeName, nil
+	return *nodeName, *bridgeName, nil
 }

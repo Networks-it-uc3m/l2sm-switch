@@ -6,12 +6,12 @@ import (
 )
 
 // generateDatapathID generates a datapath ID from the switch name
-func GenerateDatapathID(switchName string) string {
+func GenerateDatapathID(inputKey string) string {
 	// Create a new SHA256 hash object
 	hash := sha256.New()
 
 	// Write the switch name to the hash object
-	hash.Write([]byte(switchName))
+	hash.Write([]byte(inputKey))
 
 	// Get the hashed bytes
 	hashedBytes := hash.Sum(nil)

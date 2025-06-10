@@ -13,6 +13,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

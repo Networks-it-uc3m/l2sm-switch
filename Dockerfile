@@ -15,8 +15,9 @@ COPY ./config/vswitch.ovsschema /tmp/
 COPY --from=build /usr/local/bin/ .
 
 RUN apt-get update && \
-  apt-get install -y net-tools iproute2 netcat-openbsd dnsutils curl iputils-ping iptables nmap tcpdump openvswitch-switch && \
-  mkdir /var/run/openvswitch && mkdir -p /etc/openvswitch && ovsdb-tool create /etc/openvswitch/conf.db /tmp/vswitch.ovsschema 
+  apt-get install -y net-tools iproute2 netcat-openbsd dnsutils curl iputils-ping iptables nmap tcpdump openvswitch-switch 
+  
+RUN mkdir /var/run/openvswitch && mkdir -p /etc/openvswitch && ovsdb-tool create /etc/openvswitch/conf.db /tmp/vswitch.ovsschema 
 
 COPY ./setup_switch.sh ./setup_ned.sh .
 

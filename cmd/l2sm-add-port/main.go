@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 
+	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
 )
 
@@ -15,14 +16,11 @@ func main() {
 
 	portName, err := takeArguments()
 
-	bridge := ovs.FromName("brtun")
-
 	if err != nil {
-		fmt.Println("Error with the arguments. Error:", err)
+		fmt.Println("Error with arguments: ", err)
 		return
 	}
-
-	err = bridge.AddPort(portName)
+	_, err = ovs.UpdateVirtualSwitch(ovs.WithName("brtun"), ovs.WithPorts([]plsv1.Port{{Name: portName}}))
 
 	if err != nil {
 		fmt.Println("Port not added: ", err)

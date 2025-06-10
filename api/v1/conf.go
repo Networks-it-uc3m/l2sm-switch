@@ -2,19 +2,15 @@ package v1
 
 const (
 	DEFAULT_CONFIG_PATH = "/etc/l2sm"
+	SETTINGS_FILE       = "config.json"
+	TOPOLOGY_FILE       = "topology.json"
+	NEIGHBOR_FILE       = "neighbors.json"
 )
 
-type NedSettings struct {
-	ConfigDir      string
-	ControllerIP   []string
-	ControllerPort string
-	NodeName       string
-	NedName        string
-}
-
-type OverlaySettings struct {
-	ControllerIp     []string
-	ControllerPort   string
-	InterfacesNumber int
-	OverlayName      string
+type Settings struct {
+	ControllerIP     []string `json:"controllerIp"`
+	ControllerPort   string   `json:"controllerPort"`
+	NodeName         string   `json:"nodeName,omitempty"`
+	SwitchName       string   `json:"switchName"`
+	InterfacesNumber int      `json:"interfacesNumber,omitempty"`
 }
