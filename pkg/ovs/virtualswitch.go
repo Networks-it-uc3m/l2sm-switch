@@ -251,21 +251,21 @@ func (vs *VirtualSwitch) createVxlan(vxlan plsv1.Vxlan) error {
 
 }
 
-func (vs *VirtualSwitch) addPort(portName string) error {
+// func (vs *VirtualSwitch) addPort(portName string) error {
 
-	err := vs.ipService.SetInterfaceUp(portName)
+// 	err := vs.ipService.SetInterfaceUp(portName)
 
-	if err != nil {
-		return fmt.Errorf("could not set interface %s up: %v", portName, err)
-	}
+// 	if err != nil {
+// 		return fmt.Errorf("could not set interface %s up: %v", portName, err)
+// 	}
 
-	err = vs.ovsService.AddPort(vs.bridge.Name, portName, NO_DEFAULT_ID)
-	if err != nil {
-		return fmt.Errorf("could not add interface %s as a port: %v", portName, err)
-	}
-	vs.bridge.Ports[portName] = plsv1.Port{Name: portName, Status: "UP"}
-	return nil
-}
+// 	err = vs.ovsService.AddPort(vs.bridge.Name, portName, NO_DEFAULT_ID)
+// 	if err != nil {
+// 		return fmt.Errorf("could not add interface %s as a port: %v", portName, err)
+// 	}
+// 	vs.bridge.Ports[portName] = plsv1.Port{Name: portName, Status: "UP"}
+// 	return nil
+// }
 
 func (vs *VirtualSwitch) getPorts() error {
 
