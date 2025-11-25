@@ -73,7 +73,7 @@ func main() {
 	defer watcher.Close()
 
 	// Start listening for events.
-	go inits.WatchDirectory(watcher, topologyDir, settingsDir, "")
+	//go inits.WatchDirectory(watcher, topologyDir, settingsDir, "")
 
 	// Add a path.
 	err = watcher.Add(configPath)

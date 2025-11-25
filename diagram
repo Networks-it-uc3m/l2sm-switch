@@ -1,0 +1,64 @@
+graph TD
+
+%% Main Program Flow
+subgraph Main Program
+    Start[Start] --> ReadSettingsFile[Read Settings File]
+    ReadSettingsFile -->|Error| ErrorSettingsFile[Exit due to Error]
+    ReadSettingsFile -->|Success| ConfigureSwitch
+    ConfigureSwitch -->|Error| ErrorConfigureSwitch[Exit due to Error]
+    ConfigureSwitch -->|Success| AddPorts
+    AddPorts -->|Error| LogErrorAddPorts[Log Add Ports Error]
+    AddPorts -->|Success| SwitchInitialized
+    SwitchInitialized --> ReadTopologyFile[Read Topology File]
+    ReadTopologyFile -->|Error| ErrorTopologyFile[Exit due to Error]
+    ReadTopologyFile -->|Success| CreateTopology
+    CreateTopology -->|Error| ErrorCreateTopology[Exit due to Error]
+    CreateTopology -->|Success| SetupWatcher
+    SetupWatcher --> WatchDirectory
+end
+
+%% Watch Directory Flow
+subgraph WatchDirectory[Watch Directory]
+    WatchEvents[Event Detected] -->|Modified SETTINGS_FILE| ReloadSettingsFile
+    WatchEvents -->|Modified TOPOLOGY_FILE| ReloadTopologyFile
+    WatchEvents -->|Modified NEIGHBOR_FILE| ReloadNeighborFile
+
+    ReloadSettingsFile -->|Success| ReconfigureSwitch
+    ReloadTopologyFile -->|Success| RecreateTopology
+    ReloadNeighborFile -->|Success| ReconnectNeighbors
+
+    WatchErrors[Watcher Error] --> LogWatcherError
+end
+
+%% OVS Flow
+subgraph OVS Management
+    ConfigureSwitch --> GetVirtualSwitch
+    GetVirtualSwitch -->|Exists| UpdateVirtualSwitch
+    GetVirtualSwitch -->|Doesn't Exist| NewVirtualSwitch
+
+    UpdateVirtualSwitch --> UpdateFields[Update Switch Fields]
+    NewVirtualSwitch --> CreateBridge[Create New Bridge]
+    CreateBridge --> SetupBridgeFields[Setup Bridge Fields]
+end
+
+%% Detailed Utility Functions
+subgraph Utilities
+    ReadFile[Read JSON File] -->|Success| UnmarshalData[Unmarshal JSON]
+    UnmarshalData -->|Success| DataLoaded[Data Loaded]
+    UnmarshalData -->|Error| LogUnmarshalError[Log JSON Error]
+
+    CreateTopology -->|Resolve Nodes| ResolveNodes
+    ResolveNodes -->|Success| SetupVxlanLinks[Setup VXLAN Links]
+    SetupVxlanLinks -->|Success| VxlansConfigured[VXLANs Configured]
+end
+
+%% Continuous Loop
+WatchDirectory -->|Loop| WatchEvents
+WatchDirectory -->|Loop| WatchErrors
+
+%% Define exits and loggings
+ErrorSettingsFile & ErrorConfigureSwitch & ErrorTopologyFile & ErrorCreateTopology & LogErrorAddPorts & LogUnmarshalError & LogWatcherError
+
+%% Entry Point
+Start
+

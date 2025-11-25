@@ -3,17 +3,15 @@ package inits
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"time"
 
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
-	"github.com/fsnotify/fsnotify"
+	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 )
 
 func ConfigureSwitch(nodeName, switchName, controllerPort string, controllerIPs []string) (ovs.VirtualSwitch, error) {
@@ -92,18 +90,25 @@ Example:
 				"neighborNodes":["10.4.2.3","10.4.2.5"]
 			}
 */
-func ConnectToNeighbors(bridgeName string, node plsv1.Node) error {
-	for vxlanNumber, neighborIp := range node.NeighborNodes {
-		vxlanId := fmt.Sprintf("vxlan%d", vxlanNumber)
-		_, err := ovs.UpdateVirtualSwitch(ovs.WithName(bridgeName), ovs.WithVxlans([]plsv1.Vxlan{{VxlanId: vxlanId, LocalIp: node.NodeIP, RemoteIp: neighborIp, UdpPort: "7000"}}))
-		//err := bridge.CreateVxlan(ovs.Vxlan{VxlanId: vxlanId, LocalIp: node.NodeIP, RemoteIp: neighborIp, UdpPort: "7000"})
+func ConnectToNeighbors(n string, node plsv1.Node) error {
+	vxs := make([]plsv1.Vxlan, len(node.NeighborNodes))
 
+	for _, neighIP := range node.NeighborNodes {
+		vxID, err := utils.GenerateInterfaceName("vxlan-", neighIP)
 		if err != nil {
-			return fmt.Errorf("could not create vxlan with neighbor %s", neighborIp)
-		} else {
-			fmt.Printf("Created vxlan with neighbor %s", neighborIp)
+			return fmt.Errorf("error generating vxlan id: %v", err)
 		}
+		vxs = append(vxs, plsv1.Vxlan{VxlanId: vxID, LocalIp: node.NodeIP, RemoteIp: neighIP, UdpPort: plsv1.DEFAULT_VXLAN_PORT})
+
 	}
+	_, err := ovs.UpdateVirtualSwitch(ovs.WithName(n), ovs.WithVxlans(vxs))
+
+	if err != nil {
+		return fmt.Errorf("could not create vxlans with neighbors %s", node.NeighborNodes)
+	}
+
+	fmt.Printf("Created vxlan with neighbors %s", node.NeighborNodes)
+
 	return nil
 }
 
@@ -150,9 +155,8 @@ func CreateTopology(bridgeName string, topology plsv1.Topology, nodeName string)
 
 	localIp := nodeMap[nodeName]
 
-	vxlans := []plsv1.Vxlan{}
-	for vxlanNumber, link := range topology.Links {
-		vxlanId := fmt.Sprintf("vxlan%d", vxlanNumber)
+	vxs := []plsv1.Vxlan{}
+	for _, link := range topology.Links {
 		var remoteIp string
 		switch nodeName {
 		case link.EndpointNodeA:
@@ -162,15 +166,17 @@ func CreateTopology(bridgeName string, topology plsv1.Topology, nodeName string)
 		default:
 			continue
 		}
-		vxlans = append(vxlans, plsv1.Vxlan{VxlanId: vxlanId, LocalIp: localIp, RemoteIp: remoteIp, UdpPort: "7000"})
+		vxID, _ := utils.GenerateInterfaceName("vxlan-", remoteIp)
+
+		vxs = append(vxs, plsv1.Vxlan{VxlanId: vxID, LocalIp: localIp, RemoteIp: remoteIp, UdpPort: plsv1.DEFAULT_VXLAN_PORT})
 
 	}
-	_, err := ovs.UpdateVirtualSwitch(ovs.WithName(bridgeName), ovs.WithVxlans(vxlans))
+	_, err := ovs.UpdateVirtualSwitch(ovs.WithName(bridgeName), ovs.WithVxlans(vxs))
 
 	if err != nil {
-		return fmt.Errorf("could not update existing switch %s. Provided Vxlans: %s. Error:%s", bridgeName, vxlans, err)
+		return fmt.Errorf("could not update existing switch %s. Provided Vxlans: %s. Error:%s", bridgeName, vxs, err)
 	} else {
-		fmt.Printf("Created topology %s.\n", vxlans)
+		fmt.Printf("Created topology %s.\n", vxs)
 	}
 	return nil
 
@@ -196,88 +202,26 @@ func resolveWithRetry(host string, maxDelay int) ([]string, error) {
 	return nil, fmt.Errorf("unable to resolve host: %s", host)
 }
 
-func WatchDirectory(w *fsnotify.Watcher, topologyFileDir, configFileDirectory, neighborsFileDirectory string) {
-	var node plsv1.Node
-	var settings plsv1.Settings
-	var topology plsv1.Topology
-	var err error
-
-	err = ReadFile(configFileDirectory, &settings)
-	if err != nil {
-		fmt.Println("Error with the settings file. Error:", err)
-	}
-	for {
-		select {
-		case event, ok := <-w.Events:
-			if !ok {
-				return
-			}
-			log.Println("event:", event)
-
-			if event.Has(fsnotify.Write) {
-				log.Println("modified file:", filepath.Base(event.Name))
-				switch filepath.Base(event.Name) {
-				case plsv1.SETTINGS_FILE:
-					err = ReadFile(configFileDirectory, &settings)
-					if err != nil {
-						fmt.Println("Error with the provided file. Error:", err)
-						break
-					}
-					_, err := ConfigureSwitch(
-						settings.NodeName,
-						settings.SwitchName,
-						settings.ControllerPort,
-						settings.ControllerIP,
-					)
-					if err != nil {
-						fmt.Println("Could not configure switch. Error:", err)
-						break
-					}
-				case plsv1.TOPOLOGY_FILE:
-					err = ReadFile(topologyFileDir, &topology)
-
-					if err != nil {
-						fmt.Println("Error with the provided file. Errorr:", err)
-						break
-					}
-					err = CreateTopology(settings.SwitchName, topology, settings.NodeName)
-					if err != nil {
-						fmt.Println("Could not update topology. Error:", err)
-						break
-					}
-				case plsv1.NEIGHBOR_FILE:
-					err = ReadFile(neighborsFileDirectory, &node)
-
-					if err != nil {
-						fmt.Println("Error with the provided file. Error:", err)
-						break
-					}
-
-					err = ConnectToNeighbors(settings.SwitchName, node)
-					if err != nil {
-						fmt.Println("Could not connect neighbors: ", err)
-						break
-					}
-				}
-
-			}
-		case err, ok := <-w.Errors:
-			if !ok {
-				return
-			}
-			log.Println("error:", err)
-		}
-	}
-
-}
-
 func AddPorts(switchName string, interfacesNumber int) error {
-	ports := []plsv1.Port{}
-	// Set all virtual interfaces up, and connect them to the tunnel bridge:
-	for i := 1; i <= interfacesNumber; i++ {
-		ports = append(ports, plsv1.Port{Name: fmt.Sprintf("net%d", i)})
+	if interfacesNumber <= 0 {
+		return fmt.Errorf("interfacesNumber must be > 0")
 	}
-	_, err := ovs.UpdateVirtualSwitch(ovs.WithName(switchName), ovs.WithPorts(ports))
-	return err
 
+	ports := make([]plsv1.Port, 0, interfacesNumber)
+
+	for i := 1; i <= interfacesNumber; i++ {
+		id := i // create a new variable so the pointer is unique
+
+		ports = append(ports, plsv1.Port{
+			Name: fmt.Sprintf("net%d", i),
+			Id:   &id,
+		})
+	}
+
+	_, err := ovs.UpdateVirtualSwitch(
+		ovs.WithName(switchName),
+		ovs.WithPorts(ports),
+	)
+
+	return err
 }

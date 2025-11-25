@@ -3,6 +3,7 @@ package v1
 type Port struct {
 	Name   string
 	Status string
+	Id     *int
 }
 
 type Bridge struct {

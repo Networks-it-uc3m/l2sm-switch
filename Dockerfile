@@ -4,7 +4,7 @@ WORKDIR /usr/src/l2sm-switch
 
 COPY . ./
 
-RUN chmod +x ./build/build-go.sh  && ./build/build-go.sh
+RUN go build -o /usr/local/bin/talpa 
 
 FROM ubuntu:jammy 
 

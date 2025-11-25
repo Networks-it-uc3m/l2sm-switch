@@ -6,4 +6,4 @@ ovs-vsctl --db=unix:/var/run/openvswitch/db.sock --no-wait init
 
 ovs-vswitchd --pidfile=/var/run/openvswitch/ovs-vswitchd.pid --detach 
 
-ned-server 
+talpa ned

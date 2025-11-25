@@ -1,5 +1,5 @@
 # Image URL to use all building/pushing image targets
-IMG ?= alexdecb/l2sm-switch:1.2.8
+IMG ?= alexdecb/talpa:1.3.1
 
 # ENV variables for sample-config
 CONTROLLERIP ?= $(shell grep CONTROLLER_IP .env | cut -d '=' -f2)

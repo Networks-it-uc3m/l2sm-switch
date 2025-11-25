@@ -5,6 +5,7 @@ const (
 	SETTINGS_FILE       = "config.json"
 	TOPOLOGY_FILE       = "topology.json"
 	NEIGHBOR_FILE       = "neighbors.json"
+	DEFAULT_VXLAN_PORT  = "7000"
 )
 
 type Settings struct {

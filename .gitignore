@@ -2,3 +2,5 @@ config/config.json
 config/topology.json
 config/neighbors.json
 .env
+bin/
+local/

@@ -6,10 +6,6 @@ ovs-vsctl --db=unix:/var/run/openvswitch/db.sock --no-wait init
 
 ovs-vswitchd --pidfile=/var/run/openvswitch/ovs-vswitchd.pid --detach 
 
-l2sm-init --switch_name=$NODENAME
-
-sleep 20
-
-l2sm-vxlans --node_name=$NODENAME
+talpa sps-init --node_name=$NODENAME
 
 sleep infinity

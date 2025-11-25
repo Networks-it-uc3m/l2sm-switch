@@ -13,6 +13,8 @@ type OvsService struct {
 	exec Client
 }
 
+const NO_DEFAULT_ID = -1
+
 func NewOvsService() OvsService {
 	serviceClient := NewClient(OvsVsctlClient)
 	return OvsService{exec: serviceClient}
@@ -86,6 +88,20 @@ func (ovsService *OvsService) CreateVxlan(bridgeName string, vxlan plsv1.Vxlan) 
 
 }
 
+func (ovsService *OvsService) DeleteVxlan(bridgeName, vxlanId string) error {
+	commandArgs := []string{
+		"del-port",
+		bridgeName,
+		vxlanId,
+	}
+
+	output, err := ovsService.exec.CombinedOutput(commandArgs...)
+	if err != nil {
+		return fmt.Errorf("del-port error: %v\nOutput: %s", err, output)
+	}
+	return nil
+}
+
 func (ovsService *OvsService) ModifyVxlan(vxlan plsv1.Vxlan) error {
 	commandArgs := []string{
 		"set", "interface",
@@ -105,11 +121,21 @@ func (ovsService *OvsService) ModifyVxlan(vxlan plsv1.Vxlan) error {
 
 }
 
-func (ovsService *OvsService) AddPort(bridgeName string, portName string) error {
-	output, err := ovsService.exec.CombinedOutput("add-port", bridgeName, portName)
+func (ovsService *OvsService) AddPort(bridgeName, portName string, netIndex int) error {
+	args := []string{"add-port", bridgeName, portName}
+
+	if netIndex != NO_DEFAULT_ID {
+		args = append(args,
+			"--",
+			"set", "Interface", portName, fmt.Sprintf("ofport_request=%d", netIndex),
+		)
+	}
+
+	output, err := ovsService.exec.CombinedOutput(args...)
 	if err != nil {
 		return fmt.Errorf("add-port error: %v\nOutput: %s", err, output)
 	}
+
 	return nil
 }
 
