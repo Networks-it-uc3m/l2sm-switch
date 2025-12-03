@@ -43,7 +43,7 @@ to quickly create a Cobra application.`,
 
 		var settings plsv1.Settings
 
-		err = inits.ReadFile(configDir, &settings)
+		err = utils.ReadFile(configDir, &settings)
 
 		if err != nil {
 			fmt.Println("Error with the config file. Error:", err)
