@@ -12,6 +12,7 @@ import (
 
 	// Adjust the import path based on your module path
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	"github.com/Networks-it-uc3m/l2sm-switch/internal/controller"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 )
@@ -28,11 +29,6 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		bridgeName, err := cmd.Flags().GetString("bridge_name")
-		if err != nil {
-			fmt.Println("Error with the bridgename variable. Error:", err)
-			return
-		}
 		nodeName, err := cmd.Flags().GetString("node_name")
 		if err != nil {
 			fmt.Println("Error with the node name variable. Error:", err)
@@ -62,9 +58,8 @@ to quickly create a Cobra application.`,
 		fmt.Println("Initializing switch, connecting to controller: ", settings.ControllerIP)
 		switchName := datapath.GetSwitchName(datapath.DatapathParams{NodeName: nodeName, ProviderName: settings.ProviderName})
 
-		vSwitch, err := inits.ConfigureSwitch(
-			nodeName,
-			bridgeName,
+		ctr := controller.NewSwitchManager(switchName, nodeName, *sudo)
+		vs, err := ctr.ConfigureSwitch(
 			settings.ControllerPort,
 			settings.ControllerIP,
 		)
@@ -77,15 +72,15 @@ to quickly create a Cobra application.`,
 
 		fmt.Println("Switch initialized and connected to the controller.")
 
-		inits.AddPorts(bridgeName, settings.InterfacesNumber)
+		ctr.AddPorts(settings.InterfacesNumber)
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
-		fmt.Printf("\nSwitch initialized, current state: %v", vSwitch)
+		fmt.Printf("\nSwitch initialized, current state: %v", vs)
 
 		time.Sleep(20 * time.Second)
 
-		err = inits.CreateTopology(bridgeName, topology, nodeName)
+		err = ctr.CreateTopology(topology)
 
 		if err != nil {
 			fmt.Println("Error creating the topology. Error:", err)
@@ -96,7 +91,6 @@ to quickly create a Cobra application.`,
 
 func init() {
 	rootCmd.AddCommand(spsCmd)
-	spsCmd.PersistentFlags().String("bridge_name", "brtun", "name of the ovs bridge")
 	spsCmd.PersistentFlags().String("node_name", "", "name of the node the script is executed in. Required.")
 
 }

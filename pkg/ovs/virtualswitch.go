@@ -49,7 +49,7 @@ func GetVirtualSwitch(bridgeOptions ...func(*BridgeConf)) (VirtualSwitch, error)
 
 	vs.getController()
 
-	vs.getVxlans()
+	vs.GetVxlans()
 
 	return vs, nil
 }
@@ -303,9 +303,10 @@ func (vs *VirtualSwitch) getController() error {
 	return err
 }
 
-func (vs *VirtualSwitch) getVxlans() error {
+// TODO
+func (vs *VirtualSwitch) GetVxlans() ([]plsv1.Vxlan, error) {
 
-	return nil
+	return []plsv1.Vxlan{}, nil
 }
 
 func (vs *VirtualSwitch) GetPortNumber(portName string) (int64, error) {
