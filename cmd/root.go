@@ -11,6 +11,7 @@ import (
 )
 
 var configPath string
+var sudo *bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -38,6 +39,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&configPath, "config_path", plsv1.DEFAULT_CONFIG_PATH, "configuration path where config.json and topology.json are going to be placed.")
+	sudo = rootCmd.PersistentFlags().Bool("sudo", false, "Append sudo to commands (for debugging)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

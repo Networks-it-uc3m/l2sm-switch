@@ -23,8 +23,20 @@ func GetVirtualSwitch(bridgeOptions ...func(*BridgeConf)) (VirtualSwitch, error)
 	// Apply options to populate bridgeConf
 	for _, opt := range bridgeOptions {
 		opt(bridgeConf)
+
 	}
-	vs := VirtualSwitch{ovsService: NewOvsService(), ipService: NewIpService(), bridge: plsv1.Bridge{Name: bridgeConf.bridge.Name}}
+
+	ovsService := NewOvsService()
+
+	if bridgeConf.setFields[FieldSudo] {
+		ovsService = NewSudoOvsService()
+	}
+	ipService := NewIpService()
+
+	if bridgeConf.setFields[FieldSudo] {
+		ipService = NewSudoIpService()
+	}
+	vs := VirtualSwitch{ovsService: ovsService, ipService: ipService, bridge: plsv1.Bridge{Name: bridgeConf.bridge.Name}}
 
 	if !bridgeConf.setFields[FieldName] || bridgeConf.bridge.Name == "" {
 		return vs, fmt.Errorf("bridge name must be set using WithName")
@@ -58,9 +70,10 @@ func UpdateVirtualSwitch(bridgeOptions ...func(*BridgeConf)) (VirtualSwitch, err
 	}
 
 	// Attempt to retrieve the existing bridge
-	vs, err := GetVirtualSwitch(WithName(bridgeConf.bridge.Name))
+	vs, err := GetVirtualSwitch(WithName(bridgeConf.bridge.Name), WithSudo(bridgeConf.setFields[FieldSudo]))
 	if err != nil {
 		// Bridge does not exist, fallback to creation
+		fmt.Println("si que entra")
 		return NewVirtualSwitch(bridgeOptions...)
 	}
 
@@ -148,11 +161,18 @@ func NewVirtualSwitch(bridgeOptions ...func(*BridgeConf)) (VirtualSwitch, error)
 		opt(bridgeConf)
 	}
 
-	// Create the base switch object
-	vs := VirtualSwitch{
-		ovsService: NewOvsService(),
-		ipService:  NewIpService(),
-		bridge:     plsv1.Bridge{Name: bridgeConf.bridge.Name},
+	ovsService := NewOvsService()
+
+	if bridgeConf.setFields[FieldSudo] {
+		ovsService = NewSudoOvsService()
+	}
+	ipService := NewIpService()
+
+	if bridgeConf.setFields[FieldSudo] {
+		ipService = NewSudoIpService()
+	}
+	vs := VirtualSwitch{ovsService: ovsService, ipService: ipService,
+		bridge: plsv1.Bridge{Name: bridgeConf.bridge.Name},
 	}
 
 	// Validate name

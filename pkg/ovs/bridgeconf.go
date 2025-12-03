@@ -1,6 +1,8 @@
 package ovs
 
-import plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+import (
+	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+)
 
 // ConfigurableField is the settable field in BridgeConf
 type ConfigurableField string
@@ -12,6 +14,7 @@ const (
 	FieldDatapathId ConfigurableField = "datapathid"
 	FieldPorts      ConfigurableField = "ports"
 	FieldVxlans     ConfigurableField = "vxlans"
+	FieldSudo       ConfigurableField = "sudo"
 )
 
 type BridgeConf struct {

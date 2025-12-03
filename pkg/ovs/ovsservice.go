@@ -16,8 +16,11 @@ type OvsService struct {
 const NO_DEFAULT_ID = -1
 
 func NewOvsService() OvsService {
-	serviceClient := NewClient(OvsVsctlClient)
-	return OvsService{exec: serviceClient}
+	return OvsService{exec: NewClient(OvsVsctlClient)}
+}
+
+func NewSudoOvsService() OvsService {
+	return OvsService{exec: NewSudoClient(OvsVsctlClient)}
 }
 
 func (ovsService *OvsService) AddBridge(bridgeName string) error {

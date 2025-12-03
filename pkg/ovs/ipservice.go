@@ -9,16 +9,18 @@ type IpService struct {
 }
 
 func NewIpService() IpService {
+	return IpService{exec: NewClient(IpClient)}
+}
 
-	serviceClient := NewClient(IpClient)
-	return IpService{exec: serviceClient}
+func NewSudoIpService() IpService {
+	return IpService{exec: NewSudoClient(IpClient)}
 }
 
 func (ipService *IpService) SetInterfaceUp(interfaceName string) error {
 
-	output, err := ipService.exec.CombinedOutput("link", "set", interfaceName, "up")
+	o, err := ipService.exec.CombinedOutput("link", "set", interfaceName, "up")
 	if err != nil {
-		return fmt.Errorf("command error: %v\nOutput: %s", err, output)
+		return fmt.Errorf("command error: %v\nOutput: %s", err, o)
 	}
 	return nil
 
@@ -26,9 +28,9 @@ func (ipService *IpService) SetInterfaceUp(interfaceName string) error {
 
 func (ipService *IpService) AddVethPair(vethName, peerName string) error {
 
-	output, err := ipService.exec.CombinedOutput("link", "add", vethName, "type", "veth", "peer", "name", peerName)
+	o, err := ipService.exec.CombinedOutput("link", "add", vethName, "type", "veth", "peer", "name", peerName)
 	if err != nil {
-		return fmt.Errorf("command error: %v\nOutput: %s", err, output)
+		return fmt.Errorf("command error: %v\nOutput: %s", err, o)
 	}
 	return nil
 
@@ -36,9 +38,9 @@ func (ipService *IpService) AddVethPair(vethName, peerName string) error {
 
 func (ipService *IpService) AddInterfaceToLinuxBridge(interfaceName, bridgeName string) error {
 
-	output, err := ipService.exec.CombinedOutput("link", "set", interfaceName, "master", bridgeName)
+	o, err := ipService.exec.CombinedOutput("link", "set", interfaceName, "master", bridgeName)
 	if err != nil {
-		return fmt.Errorf("command error: %v\nOutput: %s", err, output)
+		return fmt.Errorf("command error: %v\nOutput: %s", err, o)
 	}
 	return nil
 
