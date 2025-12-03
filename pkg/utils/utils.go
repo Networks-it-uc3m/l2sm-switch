@@ -3,7 +3,9 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"os"
 )
 
 func GenerateInterfaceName(prefix, uniqueIdentifier string) (string, error) {
@@ -21,4 +23,22 @@ func GenerateInterfaceName(prefix, uniqueIdentifier string) (string, error) {
 
 	// Return the formatted bridge name
 	return fmt.Sprintf("%s%s", prefix, digestedName), nil
+}
+
+func ReadFile(configDir string, dataStruct interface{}) error {
+
+	/// Read file and save in memory the JSON info
+	data, err := os.ReadFile(configDir)
+	if err != nil {
+		fmt.Println("No input file was found.", err)
+		return err
+	}
+
+	err = json.Unmarshal(data, &dataStruct)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
