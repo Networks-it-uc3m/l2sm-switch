@@ -1,4 +1,4 @@
-package inits
+package filewatcher
 
 import (
 	"context"
@@ -10,27 +10,35 @@ import (
 	"time"
 
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	"github.com/Networks-it-uc3m/l2sm-switch/internal/controller"
+	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 )
 
-func StartFileWatcher(ctx context.Context, configPath, neighborsFileName, settingsFileName string) {
+type FileWatcher struct {
+	Ctr        *controller.Controller
+	FileType   string
+	ConfigPath string
+	Interval   time.Duration
+}
 
-	neighborsFileDirectory := filepath.Join(configPath, neighborsFileName)
-	//configFileDirectory := filepath.Join(configPath, settingsFileName)
-	fmt.Println(neighborsFileDirectory)
+func StartFileWatcher(ctx context.Context, configPath string, ctr *controller.Controller) {
 
 	// Start listening for events.
-	err := WatchFile(ctx, neighborsFileDirectory, 1*time.Second, plsv1.NEIGHBOR_FILE)
+	fw := &FileWatcher{Ctr: ctr, FileType: plsv1.NEIGHBOR_FILE, ConfigPath: configPath, Interval: 10 * time.Second}
+	err := fw.WatchFile(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 }
 
-func WatchFile(ctx context.Context, f string, i time.Duration, ft string) error {
+func (fw *FileWatcher) WatchFile(ctx context.Context) error {
 
-	if ft != plsv1.NEIGHBOR_FILE && ft != plsv1.TOPOLOGY_FILE && ft != plsv1.SETTINGS_FILE {
-		return fmt.Errorf("specified file type %s is not compatible with internal/filewatcher library", ft)
+	if fw.FileType != plsv1.NEIGHBOR_FILE && fw.FileType != plsv1.TOPOLOGY_FILE && fw.FileType != plsv1.SETTINGS_FILE {
+		return fmt.Errorf("specified file type %s is not compatible with internal/filewatcher library", fw.FileType)
 	}
+	f := filepath.Join(fw.ConfigPath, fw.FileType)
+
 	parsedFile, err := os.ReadFile(f)
 
 	if err != nil {
@@ -39,10 +47,8 @@ func WatchFile(ctx context.Context, f string, i time.Duration, ft string) error 
 
 	sha512sum := sha512.Sum512(parsedFile)
 
-	var node plsv1.Node
-	var settings plsv1.Settings
 	go func(ctx context.Context) {
-		tick := time.NewTicker(i)
+		tick := time.NewTicker(fw.Interval)
 		defer tick.Stop()
 
 		for {
@@ -56,7 +62,7 @@ func WatchFile(ctx context.Context, f string, i time.Duration, ft string) error 
 				parsedFile, err := os.ReadFile(f)
 
 				if err != nil {
-					log.Printf("File %s parse failed: %s", ft, err)
+					log.Printf("File %s parse failed: %s", f, err)
 					continue
 				}
 
@@ -64,15 +70,17 @@ func WatchFile(ctx context.Context, f string, i time.Duration, ft string) error 
 
 				if s != sha512sum {
 					sha512sum = s
-					switch ft {
+					switch fw.FileType {
 					case plsv1.NEIGHBOR_FILE:
-						err = ReadFile(f, &node)
+						var node plsv1.Node
+
+						err = utils.ReadFile(f, &node)
 						if err != nil {
 							log.Printf("ERROR: could not read the provided file: %v", err)
 							break
 						}
 
-						err = ConnectToNeighbors(settings.SwitchName, node)
+						err = fw.Ctr.ConnectToNeighbors(node)
 						if err != nil {
 							log.Printf("ERROR: Could not connect neighbors: %v", err)
 							break
@@ -81,7 +89,9 @@ func WatchFile(ctx context.Context, f string, i time.Duration, ft string) error 
 						log.Printf("Updated neighbors for node: %s", node.Name)
 
 					case plsv1.SETTINGS_FILE:
-						err = ReadFile(f, &settings)
+						var settings plsv1.Settings
+
+						err = utils.ReadFile(f, &settings)
 						if err != nil {
 							fmt.Println("Error with the provided file. Error:", err)
 							break

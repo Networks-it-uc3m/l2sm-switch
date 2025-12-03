@@ -1,20 +1,34 @@
-package inits
+package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
-	"os"
 	"os/exec"
 	"regexp"
 	"time"
 
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	"github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 )
 
-func ConfigureSwitch(nodeName, switchName, controllerPort string, controllerIPs []string) (ovs.VirtualSwitch, error) {
+type Controller struct {
+	switchName string
+	nodeName   string
+	sudo       bool
+}
+
+func (ctr *Controller) GetNodeName() string {
+	return ctr.nodeName
+}
+
+func NewSwitchManager(switchName, nodeName string, sudo bool) *Controller {
+
+	return &Controller{switchName, nodeName, sudo}
+}
+
+func (ctr *Controller) ConfigureSwitch(controllerPort string, controllerIPs []string) (ovs.VirtualSwitch, error) {
 
 	re := regexp.MustCompile(`\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b`)
 
@@ -33,51 +47,31 @@ func ConfigureSwitch(nodeName, switchName, controllerPort string, controllerIPs 
 		controllers = append(controllers, cs)
 	}
 
-	datapathId := ovs.GenerateDatapathID(nodeName)
+	datapathId := datapath.GenerateDatapathID(ctr.switchName)
 
 	var err error
 	var vs ovs.VirtualSwitch
 
-	_, err = ovs.GetVirtualSwitch(ovs.WithName(switchName))
+	_, err = ctr.getOvs()
 
 	if err != nil {
 		fmt.Println("Switch doesn't exist. Creating a new one.")
-		vs, err = ovs.NewVirtualSwitch(
+		vs, err = ctr.newOvs(
 			ovs.WithController(controllers),
 			ovs.WithProtocol("OpenFlow13"),
 			ovs.WithDatapathId(datapathId),
-			ovs.WithName(switchName),
 		)
 
 		return vs, err
 	}
 
-	vs, err = ovs.UpdateVirtualSwitch(
+	vs, err = ctr.updateOvs(
 		ovs.WithController(controllers),
 		ovs.WithProtocol("OpenFlow13"),
 		ovs.WithDatapathId(datapathId),
-		ovs.WithName(switchName),
 	)
 
 	return vs, err
-}
-
-func ReadFile(configDir string, dataStruct interface{}) error {
-
-	/// Read file and save in memory the JSON info
-	data, err := os.ReadFile(configDir)
-	if err != nil {
-		fmt.Println("No input file was found.", err)
-		return err
-	}
-
-	err = json.Unmarshal(data, &dataStruct)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
 }
 
 /*
@@ -90,24 +84,46 @@ Example:
 				"neighborNodes":["10.4.2.3","10.4.2.5"]
 			}
 */
-func ConnectToNeighbors(n string, node plsv1.Node) error {
+func (ctr *Controller) ConnectToNeighbors(node plsv1.Node) error {
 	vxs := make([]plsv1.Vxlan, len(node.NeighborNodes))
 
 	for _, neighIP := range node.NeighborNodes {
-		vxID, err := utils.GenerateInterfaceName("vxlan-", neighIP)
+		vxID, err := utils.GenerateInterfaceName("vxlan-", fmt.Sprintf("%s%s", node.NodeIP, neighIP))
 		if err != nil {
 			return fmt.Errorf("error generating vxlan id: %v", err)
 		}
 		vxs = append(vxs, plsv1.Vxlan{VxlanId: vxID, LocalIp: node.NodeIP, RemoteIp: neighIP, UdpPort: plsv1.DEFAULT_VXLAN_PORT})
 
 	}
-	_, err := ovs.UpdateVirtualSwitch(ovs.WithName(n), ovs.WithVxlans(vxs))
+	_, err := ctr.updateOvs(ovs.WithVxlans(vxs))
 
 	if err != nil {
 		return fmt.Errorf("could not create vxlans with neighbors %s", node.NeighborNodes)
 	}
 
-	fmt.Printf("Created vxlan with neighbors %s", node.NeighborNodes)
+	fmt.Printf("Created vxlan with neighbors %s\n", node.NeighborNodes)
+
+	return nil
+}
+
+// TODO: not finished the getVxlans method and getting localip
+func (ctr *Controller) ConnectNewNeighbor(ip string) error {
+	vs, _ := ctr.getOvs()
+	vxs, _ := vs.GetVxlans()
+
+	vxID, err := utils.GenerateInterfaceName("vxlan-", fmt.Sprintf("%s%s", "", ip))
+	if err != nil {
+		return fmt.Errorf("error generating vxlan id: %v", err)
+	}
+	vxs = append(vxs, plsv1.Vxlan{VxlanId: vxID, LocalIp: "", RemoteIp: ip, UdpPort: plsv1.DEFAULT_VXLAN_PORT})
+
+	_, err = ctr.updateOvs(ovs.WithVxlans(vxs))
+
+	if err != nil {
+		return fmt.Errorf("could not create vxlans with neighbor %s", ip)
+	}
+
+	fmt.Printf("Created vxlan with neighbor %s\n", ip)
 
 	return nil
 }
@@ -135,7 +151,7 @@ Example:
 	    ]
 	}
 */
-func CreateTopology(bridgeName string, topology plsv1.Topology, nodeName string) error {
+func (ctr *Controller) CreateTopology(topology plsv1.Topology) error {
 
 	nodeMap := make(map[string]string)
 	for _, node := range topology.Nodes {
@@ -153,12 +169,12 @@ func CreateTopology(bridgeName string, topology plsv1.Topology, nodeName string)
 		nodeMap[node.Name] = nodeIP
 	}
 
-	localIp := nodeMap[nodeName]
+	localIp := nodeMap[ctr.nodeName]
 
 	vxs := []plsv1.Vxlan{}
 	for _, link := range topology.Links {
 		var remoteIp string
-		switch nodeName {
+		switch ctr.nodeName {
 		case link.EndpointNodeA:
 			remoteIp = nodeMap[link.EndpointNodeB]
 		case link.EndpointNodeB:
@@ -171,10 +187,10 @@ func CreateTopology(bridgeName string, topology plsv1.Topology, nodeName string)
 		vxs = append(vxs, plsv1.Vxlan{VxlanId: vxID, LocalIp: localIp, RemoteIp: remoteIp, UdpPort: plsv1.DEFAULT_VXLAN_PORT})
 
 	}
-	_, err := ovs.UpdateVirtualSwitch(ovs.WithName(bridgeName), ovs.WithVxlans(vxs))
+	_, err := ctr.updateOvs(ovs.WithVxlans(vxs))
 
 	if err != nil {
-		return fmt.Errorf("could not update existing switch %s. Provided Vxlans: %s. Error:%s", bridgeName, vxs, err)
+		return fmt.Errorf("could not update existing switch %s. Provided Vxlans: %s. Error:%s", ctr.switchName, vxs, err)
 	} else {
 		fmt.Printf("Created topology %s.\n", vxs)
 	}
@@ -202,7 +218,7 @@ func resolveWithRetry(host string, maxDelay int) ([]string, error) {
 	return nil, fmt.Errorf("unable to resolve host: %s", host)
 }
 
-func AddPorts(switchName string, interfacesNumber int) error {
+func (ctr *Controller) AddPorts(interfacesNumber int) error {
 	if interfacesNumber <= 0 {
 		return fmt.Errorf("interfacesNumber must be > 0")
 	}
@@ -218,10 +234,50 @@ func AddPorts(switchName string, interfacesNumber int) error {
 		})
 	}
 
-	_, err := ovs.UpdateVirtualSwitch(
-		ovs.WithName(switchName),
+	_, err := ctr.updateOvs(
 		ovs.WithPorts(ports),
 	)
 
 	return err
+}
+
+func (ctr *Controller) AddCustomInterface(switchName string) (int64, error) {
+	// Create a new interface and attach it to the bridge
+	newPort, err := ovs.AddInterfaceToBridge(switchName)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create interface: %v", err)
+	}
+
+	vs, err := ctr.updateOvs(ovs.WithPorts([]plsv1.Port{{Name: newPort}}))
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to add port to switch: %v", err)
+	}
+
+	return vs.GetPortNumber(newPort)
+
+}
+
+// Wrapper for ovs.UpdateVirtualSwitch, including the default name and sudo option
+func (ctr *Controller) updateOvs(opts ...func(*ovs.BridgeConf)) (ovs.VirtualSwitch, error) {
+	allOpts := append([]func(*ovs.BridgeConf){
+		ovs.WithName(ctr.switchName), ovs.WithSudo(ctr.sudo),
+	}, opts...)
+
+	return ovs.UpdateVirtualSwitch(allOpts...)
+}
+
+// Wrapper for ovs.UpdateVirtualSwitch, including the default name and sudo option
+func (ctr *Controller) newOvs(opts ...func(*ovs.BridgeConf)) (ovs.VirtualSwitch, error) {
+	allOpts := append([]func(*ovs.BridgeConf){
+		ovs.WithName(ctr.switchName), ovs.WithSudo(ctr.sudo),
+	}, opts...)
+
+	return ovs.NewVirtualSwitch(allOpts...)
+}
+
+// Wrapper for ovs.UpdateVirtualSwitch, including the default name and sudo option
+func (ctr *Controller) getOvs() (ovs.VirtualSwitch, error) {
+
+	return ovs.GetVirtualSwitch(ovs.WithName(ctr.switchName), ovs.WithSudo(ctr.sudo))
 }
