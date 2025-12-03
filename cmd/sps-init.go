@@ -12,8 +12,7 @@ import (
 
 	// Adjust the import path based on your module path
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
-
-	"github.com/Networks-it-uc3m/l2sm-switch/internal/inits"
+	"github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
 )
 
 // nedCmd represents the ned command
@@ -60,6 +59,7 @@ to quickly create a Cobra application.`,
 		}
 
 		fmt.Println("Initializing switch, connecting to controller: ", settings.ControllerIP)
+		switchName := datapath.GetSwitchName(datapath.DatapathParams{NodeName: nodeName, ProviderName: settings.ProviderName})
 
 		vSwitch, err := inits.ConfigureSwitch(
 			nodeName,
