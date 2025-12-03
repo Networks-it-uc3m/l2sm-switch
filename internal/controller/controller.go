@@ -47,7 +47,7 @@ func (ctr *Controller) ConfigureSwitch(controllerPort string, controllerIPs []st
 		controllers = append(controllers, cs)
 	}
 
-	datapathId := datapath.GenerateDatapathID(ctr.switchName)
+	datapathId := datapath.GenerateID(ctr.switchName)
 
 	var err error
 	var vs ovs.VirtualSwitch

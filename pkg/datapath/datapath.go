@@ -7,7 +7,7 @@ import (
 )
 
 // generateDatapathID generates a datapath ID from the switch name
-func GenerateDatapathID(switchName string) string {
+func GenerateID(switchName string) string {
 	// Create a new SHA256 hash object
 	hash := sha256.New()
 
