@@ -75,3 +75,16 @@ func WithVxlans(vxlans []plsv1.Vxlan) func(*BridgeConf) {
 		v.setFields[FieldVxlans] = true
 	}
 }
+
+func WithSudo(s bool) func(*BridgeConf) {
+	if s {
+		return func(v *BridgeConf) {
+			v.setFields[FieldSudo] = true
+		}
+	} else {
+		return func(v *BridgeConf) {
+			v.setFields[FieldSudo] = false
+		}
+	}
+
+}
