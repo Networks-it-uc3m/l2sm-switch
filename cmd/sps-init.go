@@ -13,6 +13,7 @@ import (
 	// Adjust the import path based on your module path
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
+	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 )
 
 // nedCmd represents the ned command
@@ -51,7 +52,7 @@ to quickly create a Cobra application.`,
 		}
 		var topology plsv1.Topology
 
-		err = inits.ReadFile(topologyDir, &topology)
+		err = utils.ReadFile(topologyDir, &topology)
 
 		if err != nil {
 			fmt.Println("Error with the provided file. Error:", err)
