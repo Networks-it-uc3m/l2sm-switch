@@ -11,6 +11,7 @@ const (
 type Settings struct {
 	ControllerIP     []string `json:"controllerIp"`
 	ControllerPort   string   `json:"controllerPort"`
+	ProviderName     string   `json:"providerName"`
 	NodeName         string   `json:"nodeName,omitempty"`
 	SwitchName       string   `json:"switchName"`
 	InterfacesNumber int      `json:"interfacesNumber,omitempty"`

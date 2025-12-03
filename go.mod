@@ -16,7 +16,6 @@ require (
 )
 
 require (
-	github.com/fsnotify/fsnotify v1.9.0
 	golang.org/x/net v0.28.0 // indirect
 	google.golang.org/grpc v1.67.0
 )
