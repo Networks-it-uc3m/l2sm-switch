@@ -6,6 +6,7 @@ const (
 	TOPOLOGY_FILE       = "topology.json"
 	NEIGHBOR_FILE       = "neighbors.json"
 	DEFAULT_VXLAN_PORT  = "7000"
+	RESERVED_PROBE_ID   = 1999
 )
 
 type Settings struct {

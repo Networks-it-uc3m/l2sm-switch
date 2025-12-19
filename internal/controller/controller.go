@@ -241,6 +241,21 @@ func (ctr *Controller) AddPorts(interfacesNumber int) error {
 	return err
 }
 
+func (ctr *Controller) AddProbingPort() error {
+	id := plsv1.RESERVED_PROBE_ID
+	ports := []plsv1.Port{
+		{
+			Name:     "probe0",
+			Id:       &id,
+			Internal: true,
+		},
+	}
+	_, err := ctr.updateOvs(
+		ovs.WithPorts(ports),
+	)
+
+	return err
+}
 func (ctr *Controller) AddCustomInterface(switchName string) (int64, error) {
 	// Create a new interface and attach it to the bridge
 	newPort, err := ovs.AddInterfaceToBridge(switchName)

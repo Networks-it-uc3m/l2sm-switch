@@ -1,9 +1,10 @@
 package v1
 
 type Port struct {
-	Name   string
-	Status string
-	Id     *int
+	Name     string
+	Status   string
+	Id       *int
+	Internal bool
 }
 
 type Bridge struct {

@@ -131,7 +131,7 @@ func TestAddPort(t *testing.T) {
 		Errors:   map[string]error{},
 	}
 	svc := OvsService{exec: mock}
-	if err := svc.AddPort("br0", "eth1", -1); err != nil {
+	if err := svc.AddPort("br0", "eth1", -1, false); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
 }

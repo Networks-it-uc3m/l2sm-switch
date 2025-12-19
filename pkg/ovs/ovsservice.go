@@ -124,7 +124,7 @@ func (ovsService *OvsService) ModifyVxlan(vxlan plsv1.Vxlan) error {
 
 }
 
-func (ovsService *OvsService) AddPort(bridgeName, portName string, netIndex int) error {
+func (ovsService *OvsService) AddPort(bridgeName, portName string, netIndex int, internal bool) error {
 	args := []string{"add-port", bridgeName, portName}
 
 	if netIndex != NO_DEFAULT_ID {
@@ -132,6 +132,11 @@ func (ovsService *OvsService) AddPort(bridgeName, portName string, netIndex int)
 			"--",
 			"set", "Interface", portName, fmt.Sprintf("ofport_request=%d", netIndex),
 		)
+	}
+	if internal {
+		args = append(args,
+			"--",
+			"set", "interface", portName, "type=internal")
 	}
 
 	output, err := ovsService.exec.CombinedOutput(args...)

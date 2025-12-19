@@ -114,7 +114,7 @@ func UpdateVirtualSwitch(bridgeOptions ...func(*BridgeConf)) (VirtualSwitch, err
 				if port.Id != nil {
 					i = *port.Id
 				}
-				if err = ovs.AddPort(name, port.Name, i); err != nil {
+				if err = ovs.AddPort(name, port.Name, i, port.Internal); err != nil {
 					return vs, fmt.Errorf("failed to add port %s: %v", port.Name, err)
 				}
 				vs.bridge.Ports[id] = bridgeConf.bridge.Ports[id]
@@ -238,7 +238,7 @@ func NewVirtualSwitch(bridgeOptions ...func(*BridgeConf)) (VirtualSwitch, error)
 			if port.Id != nil {
 				i = *port.Id
 			}
-			if err = ovs.AddPort(name, port.Name, i); err != nil {
+			if err = ovs.AddPort(name, port.Name, i, port.Internal); err != nil {
 				return vs, fmt.Errorf("failed to add port %s: %v", port.Name, err)
 			}
 
