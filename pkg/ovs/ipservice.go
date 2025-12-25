@@ -2,6 +2,7 @@ package ovs
 
 import (
 	"fmt"
+	"net"
 )
 
 type IpService struct {
@@ -24,6 +25,16 @@ func (ipService *IpService) SetInterfaceUp(interfaceName string) error {
 	}
 	return nil
 
+}
+
+func (ipService *IpService) AddIpAddress(interfaceName string, ipNet *net.IPNet) error {
+	cidrString := ipNet.String()
+
+	o, err := ipService.exec.CombinedOutput("addr", "add", cidrString, "dev", interfaceName)
+	if err != nil {
+		return fmt.Errorf("command error: %v\nOutput: %s", err, o)
+	}
+	return nil
 }
 
 func (ipService *IpService) AddVethPair(vethName, peerName string) error {

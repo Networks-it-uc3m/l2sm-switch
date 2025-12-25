@@ -1,10 +1,13 @@
 package v1
 
+import "net"
+
 type Port struct {
-	Name     string
-	Status   string
-	Id       *int
-	Internal bool
+	Name      string
+	Status    string
+	Id        *int
+	Internal  bool
+	IpAddress *net.IPNet
 }
 
 type Bridge struct {

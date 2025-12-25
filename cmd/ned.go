@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -73,6 +74,15 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			fmt.Println("Error configuring switch. Error:", err)
 			return
+		}
+
+		if settings.ProbingIpAddress != nil {
+			_, ip, err := net.ParseCIDR(*settings.ProbingIpAddress)
+			if err != nil {
+				fmt.Printf("Error parsing ip address for probing port: %v", err)
+			} else {
+				ctr.AddProbingPort(*ip)
+			}
 		}
 		err = ctr.ConnectToNeighbors(node)
 		if err != nil {

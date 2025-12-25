@@ -241,13 +241,14 @@ func (ctr *Controller) AddPorts(interfacesNumber int) error {
 	return err
 }
 
-func (ctr *Controller) AddProbingPort() error {
+func (ctr *Controller) AddProbingPort(ip net.IPNet) error {
 	id := plsv1.RESERVED_PROBE_ID
 	ports := []plsv1.Port{
 		{
-			Name:     "probe0",
-			Id:       &id,
-			Internal: true,
+			Name:      "probe0",
+			Id:        &id,
+			Internal:  true,
+			IpAddress: &ip,
 		},
 	}
 	_, err := ctr.updateOvs(

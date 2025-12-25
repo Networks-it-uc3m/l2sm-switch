@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 	"path/filepath"
 	"time"
 
@@ -77,6 +78,15 @@ to quickly create a Cobra application.`,
 			fmt.Println("Error:", err)
 		}
 		fmt.Printf("\nSwitch initialized, current state: %v", vs)
+
+		if settings.ProbingIpAddress != nil {
+			_, ip, err := net.ParseCIDR(*settings.ProbingIpAddress)
+			if err != nil {
+				fmt.Printf("Error parsing ip address for probing port: %v", err)
+			} else {
+				ctr.AddProbingPort(*ip)
+			}
+		}
 
 		time.Sleep(20 * time.Second)
 
