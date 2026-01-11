@@ -35,6 +35,11 @@ to quickly create a Cobra application.`,
 			fmt.Println("Error with the node name variable. Error:", err)
 			return
 		}
+		monitorFile, err = cmd.Flags().GetString("monitor_file")
+		if err != nil {
+			fmt.Println("Error with the monitoring file variable. Error:", err)
+			return
+		}
 
 		configDir := filepath.Join(configPath, plsv1.SETTINGS_FILE)
 		topologyDir := filepath.Join(configPath, plsv1.TOPOLOGY_FILE)
@@ -79,8 +84,10 @@ to quickly create a Cobra application.`,
 		}
 		fmt.Printf("\nSwitch initialized, current state: %v", vs)
 
-		if settings.ProbingIpAddress != nil {
-			_, ip, err := net.ParseCIDR(*settings.ProbingIpAddress)
+		if monitorFile != "" {
+			var monitorSettings plsv1.MonitoringSettings
+			err = utils.ReadFile(monitorFile, &monitorSettings)
+			_, ip, err := net.ParseCIDR(monitorSettings.IpAddress)
 			if err != nil {
 				fmt.Printf("Error parsing ip address for probing port: %v", err)
 			} else {

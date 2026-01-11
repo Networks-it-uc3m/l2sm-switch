@@ -16,5 +16,8 @@ type Settings struct {
 	NodeName         string   `json:"nodeName,omitempty"`
 	SwitchName       string   `json:"switchName"`
 	InterfacesNumber int      `json:"interfacesNumber,omitempty"`
-	ProbingIpAddress *string  `json:"probingIpAddress,omitempty"`
+}
+
+type MonitoringSettings struct {
+	IpAddress string `json:"ipAddress"`
 }

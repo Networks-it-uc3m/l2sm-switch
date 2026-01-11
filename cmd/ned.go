@@ -75,15 +75,17 @@ to quickly create a Cobra application.`,
 			fmt.Println("Error configuring switch. Error:", err)
 			return
 		}
-
-		if settings.ProbingIpAddress != nil {
-			_, ip, err := net.ParseCIDR(*settings.ProbingIpAddress)
+		if monitorFile != "" {
+			var monitorSettings plsv1.MonitoringSettings
+			err = utils.ReadFile(monitorFile, &monitorSettings)
+			_, ip, err := net.ParseCIDR(monitorSettings.IpAddress)
 			if err != nil {
 				fmt.Printf("Error parsing ip address for probing port: %v", err)
 			} else {
 				ctr.AddProbingPort(*ip)
 			}
 		}
+
 		err = ctr.ConnectToNeighbors(node)
 		if err != nil {
 			fmt.Println("Error connecting to neighbors. Error:", err)

@@ -11,6 +11,7 @@ import (
 )
 
 var configPath string
+var monitorFile string
 var sudo *bool
 
 // rootCmd represents the base command when called without any subcommands
@@ -40,7 +41,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&configPath, "config_path", plsv1.DEFAULT_CONFIG_PATH, "configuration path where config.json and topology.json are going to be placed.")
 	sudo = rootCmd.PersistentFlags().Bool("sudo", false, "Append sudo to commands (for debugging)")
-
+	rootCmd.Flags().StringVar(&monitorFile, "monitor_file", "", "Path to monitoring config file (enables monitoring sidecar/container)")
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	//rootCmd.Flags().BoolP("grpc_server", "", false, "Help message for toggle")
