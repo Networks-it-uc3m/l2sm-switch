@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"fmt"
-	"net"
+	"net/netip"
 	"path/filepath"
 	"time"
 
@@ -33,11 +33,6 @@ to quickly create a Cobra application.`,
 		nodeName, err := cmd.Flags().GetString("node_name")
 		if err != nil {
 			fmt.Println("Error with the node name variable. Error:", err)
-			return
-		}
-		monitorFile, err = cmd.Flags().GetString("monitor_file")
-		if err != nil {
-			fmt.Println("Error with the monitoring file variable. Error:", err)
 			return
 		}
 
@@ -87,11 +82,18 @@ to quickly create a Cobra application.`,
 		if monitorFile != "" {
 			var monitorSettings plsv1.MonitoringSettings
 			err = utils.ReadFile(monitorFile, &monitorSettings)
-			_, ip, err := net.ParseCIDR(monitorSettings.IpAddress)
+			if err != nil {
+				fmt.Println("Error with the provided file. Error:", err)
+				return
+			}
+			ip, err := netip.ParsePrefix(monitorSettings.IpAddress)
 			if err != nil {
 				fmt.Printf("Error parsing ip address for probing port: %v", err)
 			} else {
-				ctr.AddProbingPort(*ip)
+				if err = ctr.AddProbingPort(ip); err != nil {
+					fmt.Printf("error adding probing port: %v\n", err)
+				}
+
 			}
 		}
 
@@ -103,6 +105,7 @@ to quickly create a Cobra application.`,
 			fmt.Println("Error creating the topology. Error:", err)
 			return
 		}
+		select {}
 	},
 }
 

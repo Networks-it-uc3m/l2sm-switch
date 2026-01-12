@@ -2,7 +2,7 @@ package ovs
 
 import (
 	"fmt"
-	"net"
+	"net/netip"
 )
 
 type IpService struct {
@@ -27,8 +27,8 @@ func (ipService *IpService) SetInterfaceUp(interfaceName string) error {
 
 }
 
-func (ipService *IpService) AddIpAddress(interfaceName string, ipNet *net.IPNet) error {
-	cidrString := ipNet.String()
+func (ipService *IpService) AddIpAddress(interfaceName string, ip netip.Prefix) error {
+	cidrString := ip.String()
 
 	o, err := ipService.exec.CombinedOutput("addr", "add", cidrString, "dev", interfaceName)
 	if err != nil {

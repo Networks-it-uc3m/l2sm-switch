@@ -1,13 +1,13 @@
 package v1
 
-import "net"
+import "net/netip"
 
 type Port struct {
 	Name      string
 	Status    string
 	Id        *int
 	Internal  bool
-	IpAddress *net.IPNet
+	IpAddress *netip.Prefix
 }
 
 type Bridge struct {

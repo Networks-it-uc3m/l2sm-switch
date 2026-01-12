@@ -6,7 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net"
+	"net/netip"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -78,11 +78,11 @@ to quickly create a Cobra application.`,
 		if monitorFile != "" {
 			var monitorSettings plsv1.MonitoringSettings
 			err = utils.ReadFile(monitorFile, &monitorSettings)
-			_, ip, err := net.ParseCIDR(monitorSettings.IpAddress)
+			ip, err := netip.ParsePrefix(monitorSettings.IpAddress)
 			if err != nil {
 				fmt.Printf("Error parsing ip address for probing port: %v", err)
 			} else {
-				ctr.AddProbingPort(*ip)
+				ctr.AddProbingPort(ip)
 			}
 		}
 

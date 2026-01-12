@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"os/exec"
 	"regexp"
 	"time"
@@ -241,7 +242,7 @@ func (ctr *Controller) AddPorts(interfacesNumber int) error {
 	return err
 }
 
-func (ctr *Controller) AddProbingPort(ip net.IPNet) error {
+func (ctr *Controller) AddProbingPort(ip netip.Prefix) error {
 	id := plsv1.RESERVED_PROBE_ID
 	ports := []plsv1.Port{
 		{
