@@ -108,18 +108,19 @@ func UpdateVirtualSwitch(bridgeOptions ...func(*BridgeConf)) (VirtualSwitch, err
 		for id, port := range bridgeConf.bridge.Ports {
 			if _, exists := vs.bridge.Ports[id]; !exists {
 				i := NO_DEFAULT_ID
-				if err = ip.SetInterfaceUp(port.Name); err != nil {
-					return vs, fmt.Errorf("failed to add port %s: %v", port.Name, err)
-				}
 				if port.Id != nil {
 					i = *port.Id
 				}
 				if err = ovs.AddPort(name, port.Name, i, port.Internal); err != nil {
 					return vs, fmt.Errorf("failed to add port %s: %v", port.Name, err)
 				}
-				if port.Internal {
-					ip.AddIpAddress(port.Name, port.IpAddress)
+				if err = ip.SetInterfaceUp(port.Name); err != nil {
+					return vs, fmt.Errorf("failed to set interface %s up: %v", port.Name, err)
 				}
+				if port.Internal {
+					ip.AddIpAddress(port.Name, *port.IpAddress)
+				}
+
 				vs.bridge.Ports[id] = bridgeConf.bridge.Ports[id]
 			}
 		}
