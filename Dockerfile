@@ -19,9 +19,6 @@ RUN apt-get update && \
   
 RUN mkdir /var/run/openvswitch && mkdir -p /etc/openvswitch && ovsdb-tool create /etc/openvswitch/conf.db /tmp/vswitch.ovsschema 
 
-COPY ./setup_switch.sh ./setup_ned.sh .
+RUN  mkdir /etc/l2sm/
 
-RUN chmod +x ./setup_switch.sh ./setup_ned.sh && \
-    mkdir /etc/l2sm/
-
-CMD [ "./setup_switch.sh" ]
+ENTRYPOINT [ "talpa" ]
