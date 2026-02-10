@@ -1,10 +1,13 @@
 FROM golang:1.21 AS build
 
-WORKDIR /usr/src/l2sm-switch
+ARG TARGETOS
+ARG TARGETARCH
+
+WORKDIR /usr/src/talpa
 
 COPY . ./
 
-RUN go build -o /usr/local/bin/talpa 
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o /usr/local/bin/talpa 
 
 FROM ubuntu:jammy 
 
