@@ -20,6 +20,25 @@ type Controller struct {
 	sudo       bool
 }
 
+func (ctr *Controller) GetNewPort(ifid dp.Ifid) (plsv1.Port, error) {
+	vs, err := ovs.GetVirtualSwitch(ovs.WithName(ctr.switchName))
+	if err != nil {
+
+		return plsv1.Port{}, fmt.Errorf("could not get virtual switch. error: %v", err)
+	}
+
+	id, err := vs.GetNewPortId()
+	if err != nil {
+		return plsv1.Port{}, fmt.Errorf("could not get a new port id: %v", err)
+	}
+	p := ifid.Port(id)
+	if linuxif.Exists(p) {
+		// todo: give identity to the error so a recover process can be started
+		return plsv1.Port{}, fmt.Errorf("error getting new port id. it looks like a talpa port is currently orphan.")
+	}
+	return plsv1.Port{Name: p, Id: &id}, nil
+}
+
 func (ctr *Controller) GetNodeName() string {
 	return ctr.nodeName
 }
