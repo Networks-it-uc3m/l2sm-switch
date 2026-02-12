@@ -10,6 +10,8 @@ import (
 
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
+	dp "github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
+	"github.com/Networks-it-uc3m/l2sm-switch/pkg/linuxif"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/ovs"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 )
@@ -242,21 +244,7 @@ func resolveWithRetry(host string, maxDelay int) ([]string, error) {
 	return nil, fmt.Errorf("unable to resolve host: %s", host)
 }
 
-func (ctr *Controller) AddPorts(interfacesNumber int) error {
-	if interfacesNumber <= 0 {
-		return fmt.Errorf("interfacesNumber must be > 0")
-	}
-
-	ports := make([]plsv1.Port, 0, interfacesNumber)
-
-	for i := 1; i <= interfacesNumber; i++ {
-		id := i // create a new variable so the pointer is unique
-
-		ports = append(ports, plsv1.Port{
-			Name: fmt.Sprintf("net%d", i),
-			Id:   &id,
-		})
-	}
+func (ctr *Controller) AddPorts(ports []plsv1.Port) error {
 
 	_, err := ctr.updateOvs(
 		ovs.WithPorts(ports),
@@ -265,11 +253,11 @@ func (ctr *Controller) AddPorts(interfacesNumber int) error {
 	return err
 }
 
-func (ctr *Controller) AddProbingPort(ip netip.Prefix) error {
+func (ctr *Controller) AddProbingPort(ip netip.Prefix, ifid dp.Ifid) error {
 	id := plsv1.RESERVED_PROBE_ID
 	ports := []plsv1.Port{
 		{
-			Name:      "probe0",
+			Name:      ifid.Probe(id),
 			Id:        &id,
 			Internal:  true,
 			IpAddress: &ip,
@@ -282,6 +270,7 @@ func (ctr *Controller) AddProbingPort(ip netip.Prefix) error {
 	return err
 }
 func (ctr *Controller) AddCustomInterface(switchName string) (int64, error) {
+
 	// Create a new interface and attach it to the bridge
 	newPort, err := ovs.AddInterfaceToBridge(switchName)
 	if err != nil {
@@ -296,6 +285,34 @@ func (ctr *Controller) AddCustomInterface(switchName string) (int64, error) {
 
 	return vs.GetPortNumber(newPort)
 
+}
+
+// AttachExistingInterfaces discovers current Linux interfaces and attaches matching
+// names to the switch, skipping interfaces already managed by Talpa naming.
+func (ctr *Controller) GetOrphanInterfaces(ifid dp.Ifid) ([]plsv1.Port, error) {
+
+	ports := []plsv1.Port{}
+	names, err := linuxif.ListNames()
+	if err != nil {
+		return ports, fmt.Errorf("could not list interfaces: %w", err)
+	}
+
+	for _, name := range names {
+		if name == "lo" || name == ctr.switchName {
+			continue
+		}
+		if !ifid.IsManaged(name) {
+			continue
+		}
+
+		id, _, _, parseErr := datapath.Parse(name)
+		if parseErr == nil {
+			continue
+		}
+		ports = append(ports, plsv1.Port{Name: name, Id: &id})
+	}
+
+	return ports, nil
 }
 
 // Wrapper for ovs.UpdateVirtualSwitch, including the default name and sudo option

@@ -14,7 +14,7 @@ import (
 	// Adjust the import path based on your module path
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 	"github.com/Networks-it-uc3m/l2sm-switch/internal/controller"
-	"github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
+	dp "github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 )
 
@@ -57,7 +57,7 @@ to quickly create a Cobra application.`,
 		}
 
 		fmt.Println("Initializing switch, connecting to controller: ", settings.ControllerIP)
-		switchName := datapath.GetSwitchName(datapath.DatapathParams{NodeName: nodeName, ProviderName: settings.ProviderName})
+		switchName := dp.GetSwitchName(dp.DatapathParams{NodeName: nodeName, ProviderName: settings.ProviderName})
 
 		ctr := controller.NewSwitchManager(switchName, nodeName, *sudo)
 		vs, err := ctr.ConfigureSwitch(
@@ -73,7 +73,14 @@ to quickly create a Cobra application.`,
 
 		fmt.Println("Switch initialized and connected to the controller.")
 
-		ctr.AddPorts(settings.InterfacesNumber)
+		ports, err := ctr.GetOrphanInterfaces(dp.New(switchName))
+		if err != nil {
+
+			fmt.Println("error retrieving the existing interfaces. err: %v")
+
+			return
+		}
+		ctr.AddPorts(ports)
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
@@ -90,7 +97,7 @@ to quickly create a Cobra application.`,
 			if err != nil {
 				fmt.Printf("Error parsing ip address for probing port: %v", err)
 			} else {
-				if err = ctr.AddProbingPort(ip); err != nil {
+				if err = ctr.AddProbingPort(ip, dp.New(switchName)); err != nil {
 					fmt.Printf("error adding probing port: %v\n", err)
 				}
 

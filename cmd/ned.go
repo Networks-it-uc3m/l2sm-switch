@@ -13,6 +13,7 @@ import (
 
 	// Adjust the import path based on your module path
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	dp "github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 
 	"github.com/Networks-it-uc3m/l2sm-switch/internal/controller"
@@ -75,6 +76,17 @@ to quickly create a Cobra application.`,
 			fmt.Println("Error configuring switch. Error:", err)
 			return
 		}
+		ports, err := ctr.GetOrphanInterfaces(dp.New(settings.SwitchName))
+		if err != nil {
+
+			fmt.Printf("error retrieving the existing interfaces. err: %v\n", err)
+
+			return
+		}
+		ctr.AddPorts(ports)
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
 		if monitorFile != "" {
 			var monitorSettings plsv1.MonitoringSettings
 			err = utils.ReadFile(monitorFile, &monitorSettings)
@@ -82,7 +94,7 @@ to quickly create a Cobra application.`,
 			if err != nil {
 				fmt.Printf("Error parsing ip address for probing port: %v", err)
 			} else {
-				ctr.AddProbingPort(ip)
+				ctr.AddProbingPort(ip, dp.New(settings.SwitchName))
 			}
 		}
 
