@@ -12,6 +12,8 @@ import (
 
 	"github.com/Networks-it-uc3m/l2sm-switch/internal/controller"
 
+	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	dp "github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
 	"github.com/Networks-it-uc3m/l2sm-switch/pkg/nedpb"
 )
 
@@ -61,16 +63,21 @@ func (s *server) CreateVxlan(ctx context.Context, req *nedpb.CreateVxlanRequest)
 
 // AttachInterface implements nedpb.VxlanServiceServer
 func (s *server) AttachInterface(ctx context.Context, req *nedpb.AttachInterfaceRequest) (*nedpb.AttachInterfaceResponse, error) {
-	interfaceName := req.GetInterfaceName()
 
-	interfaceNum, err := s.Ctr.AddCustomInterface(interfaceName)
+	ifid := dp.New(s.Ctr.GetSwitchName())
+
+	p, err := s.Ctr.GetNewPort(ifid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate a new port name. error: %v", err)
+	}
+	err = s.Ctr.AddPorts([]plsv1.Port{p})
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to add interface to bridge: %v", err)
 	}
 
 	return &nedpb.AttachInterfaceResponse{
-		InterfaceNum: interfaceNum,
+		InterfaceNum: int64(*p.Id),
 		NodeName:     s.Ctr.GetNodeName(),
 	}, nil
 }
