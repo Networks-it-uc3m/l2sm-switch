@@ -3,10 +3,12 @@ package ovs
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+	"github.com/Networks-it-uc3m/l2sm-switch/pkg/datapath"
 )
 
 type OvsService struct {
@@ -180,6 +182,39 @@ func (ovsService *OvsService) GetPorts(bridgeName string) (map[string]plsv1.Port
 	}
 
 	return portMap, nil
+}
+
+// GetNewPortID returns the next available Talpa port ID for the provided switch token.
+// It derives IDs from currently attached OVS ports matching datapath naming.
+func (ovsService *OvsService) GetNewPortID(bridgeName string) (int, error) {
+	ports, err := ovsService.GetPorts(bridgeName)
+	if err != nil {
+		return 0, err
+	}
+
+	maxID := 0
+	// iterate through the ports and get the maximum port. new id will be the next one
+	for portName := range ports {
+		id, typ, _, parseErr := datapath.Parse(portName)
+		if parseErr != nil || typ != datapath.TypePort {
+			continue
+		}
+		// probe id is a high number which we skip
+		if id > maxID && id != plsv1.RESERVED_PROBE_ID {
+			maxID = id
+		}
+	}
+	if maxID == math.MaxInt {
+		return 0, fmt.Errorf("reached maximum number of ports")
+	}
+	newId := maxID + 1
+	// there is one case where the reserved will be equal to the reserved. honestly i think i should change this
+	// so that probe is the maximum and in this case, return an error where we reached the maximum number of ids.
+	if newId == plsv1.RESERVED_PROBE_ID {
+		newId += newId
+	}
+
+	return newId, nil
 }
 
 func (ovsService *OvsService) GetController(bridgeName string) ([]string, error) {

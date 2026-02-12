@@ -14,6 +14,10 @@ type VirtualSwitch struct {
 	ipService  IpService
 }
 
+func (vs *VirtualSwitch) GetNewPortId() (int, error) {
+	return vs.ovsService.GetNewPortID(vs.bridge.Name)
+}
+
 func GetVirtualSwitch(bridgeOptions ...func(*BridgeConf)) (VirtualSwitch, error) {
 
 	bridgeConf := &BridgeConf{
