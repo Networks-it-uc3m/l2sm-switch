@@ -24,6 +24,10 @@ func (ctr *Controller) GetNodeName() string {
 	return ctr.nodeName
 }
 
+func (ctr *Controller) GetSwitchName() string {
+	return ctr.switchName
+}
+
 func NewSwitchManager(switchName, nodeName string, sudo bool) *Controller {
 
 	return &Controller{switchName, nodeName, sudo}
