@@ -70,6 +70,13 @@ func (s *server) AttachInterface(ctx context.Context, req *nedpb.AttachInterface
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate a new port name. error: %v", err)
 	}
+	// sps end bridge is the end bridge that belongs to sps, the one that will connect l2sm with the ned. the end path will be something like this:
+	// nedSwitchName -> ifid -> ifidPeer -> spsEndBridge -> spsIfIdPeer -> spsIfid -> spsSwitchName
+	// complicated, i know, but when i made it i didnt have much time to do a proper implementation :/
+	// if anyone is reading this and is willing to make it right, a feasible path would be: remove bridge spsEndBridge dependency, (by removing multus dependency)
+	// and then moving the sps to the host namespace, so the integration is much more fluent, as this induces a lot of jargon
+	spsEndBridge := req.GetInterfaceName()
+	s.Ctr.CreatePort(p, spsEndBridge)
 	//todo: new port must be created!!!
 	err = s.Ctr.AddPorts([]plsv1.Port{p})
 
