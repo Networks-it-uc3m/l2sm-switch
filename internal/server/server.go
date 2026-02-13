@@ -70,6 +70,7 @@ func (s *server) AttachInterface(ctx context.Context, req *nedpb.AttachInterface
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate a new port name. error: %v", err)
 	}
+	//todo: new port must be created!!!
 	err = s.Ctr.AddPorts([]plsv1.Port{p})
 
 	if err != nil {
