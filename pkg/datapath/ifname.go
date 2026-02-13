@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
 )
 
 const (
@@ -19,12 +21,14 @@ type IfType int
 const (
 	TypePort IfType = iota
 	TypeProbe
+	TypePeer
 	TypeUnknown
 )
 
 var iftypes = map[IfType]string{
 	TypePort:    "",
 	TypeProbe:   "probe",
+	TypePeer:    "peer",
 	TypeUnknown: "UNKNOWN",
 }
 
@@ -43,11 +47,36 @@ func (ifid *Ifid) Probe(id int) string {
 	return fmt.Sprintf("%s%s%s%d", PREFIX, ifid.token, iftypes[TypeProbe], id)
 }
 
+// GeneratePeerName returns the Linux peer interface name that corresponds to a
+// datapath port. Preferred format is "l2peer<port-id>".
+func GeneratePeerName(port plsv1.Port) string {
+	if port.Id != nil {
+		return fmt.Sprintf("%s%s%d", PREFIX, iftypes[TypePeer], *port.Id)
+	}
+
+	id, typ, _, err := Parse(port.Name)
+	if err == nil && typ == TypePort {
+		return fmt.Sprintf("%s%s%d", PREFIX, iftypes[TypePeer], id)
+	}
+
+	return fmt.Sprintf("%s%s%s", PREFIX, iftypes[TypePeer], port.Name)
+}
+
 // Parse interface by given name. Will return the id, the type of interface, the switch if. If the name is not matched to a datapath interface,
 // an error is returned, alongside empty fields.
 func Parse(ifname string) (int, IfType, Ifid, error) {
 
 	ifid := Ifid{}
+
+	peerPrefix := fmt.Sprintf("%s%s", PREFIX, iftypes[TypePeer])
+	if after, ok := strings.CutPrefix(ifname, peerPrefix); ok {
+		idStr := after
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			return 0, TypeUnknown, ifid, fmt.Errorf("could not find valid id")
+		}
+		return id, TypePeer, ifid, nil
+	}
 
 	// if it is not managed by switch if, or the length is not appropiate (prefix length + token length + id length), this interface is not ours.
 	if !IsManaged(ifname) || len(ifname) < (len(PREFIX)+TOKEN_LEN+1) {

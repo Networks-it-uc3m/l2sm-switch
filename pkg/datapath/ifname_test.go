@@ -1,7 +1,11 @@
 // ifname_test.go
 package datapath
 
-import "testing"
+import (
+	"testing"
+
+	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
+)
 
 func TestPortAndProbeFormatting(t *testing.T) {
 	ifid := Ifid{token: "abcde"}
@@ -52,6 +56,24 @@ func TestParse_Probe(t *testing.T) {
 	}
 	if ifid.token != "abcde" {
 		t.Fatalf("Parse() token: got %q, want %q", ifid.token, "abcde")
+	}
+}
+
+func TestParse_Peer(t *testing.T) {
+	name := "lspeer42"
+
+	id, typ, ifid, err := Parse(name)
+	if err != nil {
+		t.Fatalf("Parse() unexpected error: %v", err)
+	}
+	if id != 42 {
+		t.Fatalf("Parse() id: got %d, want %d", id, 42)
+	}
+	if typ != TypePeer {
+		t.Fatalf("Parse() type: got %v, want %v", typ, TypePeer)
+	}
+	if ifid.token != "" {
+		t.Fatalf("Parse() token: got %q, want empty", ifid.token)
 	}
 }
 
@@ -116,5 +138,16 @@ func TestIsManaged(t *testing.T) {
 	}
 	if ifid1.IsManaged(inter2) {
 		t.Fatalf("(*Ifid).IsManaged(): expected false for non-matching token")
+	}
+}
+
+func TestGeneratePeerName(t *testing.T) {
+	id := 17
+	if got := GeneratePeerName(plsv1.Port{Id: &id, Name: "lsabcde17"}); got != "lspeer17" {
+		t.Fatalf("GeneratePeerName() with ID: got %q, want %q", got, "lspeer17")
+	}
+
+	if got := GeneratePeerName(plsv1.Port{Name: "lsabcde23"}); got != "lspeer23" {
+		t.Fatalf("GeneratePeerName() parsed from name: got %q, want %q", got, "lspeer23")
 	}
 }
