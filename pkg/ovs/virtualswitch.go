@@ -2,10 +2,8 @@ package ovs
 
 import (
 	"fmt"
-	"time"
 
 	plsv1 "github.com/Networks-it-uc3m/l2sm-switch/api/v1"
-	"github.com/Networks-it-uc3m/l2sm-switch/pkg/utils"
 )
 
 type VirtualSwitch struct {
@@ -331,40 +329,4 @@ func (vs *VirtualSwitch) exists() bool {
 	err := vs.ovsService.exec.Run("br-exists", vs.bridge.Name)
 
 	return err == nil
-}
-
-// AddInterfaceToBridge creates a new veth pair, attaches one end to the specified bridge,
-// and returns the name of the other end.
-func AddInterfaceToBridge(bridgeName string) (string, error) {
-	var err error
-	ipService := NewIpService()
-	// Generate unique interface names
-	timestamp := time.Now().UnixNano()
-	vethName, _ := utils.GenerateInterfaceName("veth", fmt.Sprintf("%s%d", bridgeName, timestamp))
-	peerName, _ := utils.GenerateInterfaceName("vpeer", fmt.Sprintf("%s%d", bridgeName, timestamp))
-
-	// Create the veth pair
-	err = ipService.AddVethPair(vethName, peerName)
-
-	if err != nil {
-		return "", fmt.Errorf("failed to create veth pair: %v", err)
-	}
-	// Set both interfaces up
-	err = ipService.SetInterfaceUp(vethName)
-	if err != nil {
-		return "", fmt.Errorf("failed to set %s up: %v", vethName, err)
-	}
-
-	err = ipService.SetInterfaceUp(peerName)
-	if err != nil {
-		return "", fmt.Errorf("failed to set %s up: %v", peerName, err)
-	}
-
-	err = ipService.AddInterfaceToLinuxBridge(peerName, bridgeName)
-
-	if err != nil {
-		return "", fmt.Errorf("failed to add %s to bridge %s: %v", peerName, bridgeName, err)
-	}
-
-	return vethName, nil
 }
