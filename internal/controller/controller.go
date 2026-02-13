@@ -269,23 +269,6 @@ func (ctr *Controller) AddProbingPort(ip netip.Prefix, ifid dp.Ifid) error {
 
 	return err
 }
-func (ctr *Controller) AddCustomInterface(switchName string) (int64, error) {
-
-	// Create a new interface and attach it to the bridge
-	newPort, err := ovs.AddInterfaceToBridge(switchName)
-	if err != nil {
-		return 0, fmt.Errorf("failed to create interface: %v", err)
-	}
-
-	vs, err := ctr.updateOvs(ovs.WithPorts([]plsv1.Port{{Name: newPort}}))
-
-	if err != nil {
-		return 0, fmt.Errorf("failed to add port to switch: %v", err)
-	}
-
-	return vs.GetPortNumber(newPort)
-
-}
 
 // AttachExistingInterfaces discovers current Linux interfaces and attaches matching
 // names to the switch, skipping interfaces already managed by Talpa naming.
@@ -337,4 +320,26 @@ func (ctr *Controller) newOvs(opts ...func(*ovs.BridgeConf)) (ovs.VirtualSwitch,
 func (ctr *Controller) getOvs() (ovs.VirtualSwitch, error) {
 
 	return ovs.GetVirtualSwitch(ovs.WithName(ctr.switchName), ovs.WithSudo(ctr.sudo))
+}
+
+// AddInterfaceToBridge creates a new veth pair, attaches one end to the specified bridge,
+func (ctr *Controller) CreatePort(port plsv1.Port, spsEndBridge string) error {
+	var err error
+	// Generate unique interface names
+	peerName := datapath.GeneratePeerName(port)
+
+	// Create the veth pair
+	err = linuxif.AddVethPair(port.Name, peerName)
+
+	if err != nil {
+		return fmt.Errorf("failed to create veth pair: %v", err)
+	}
+
+	err = linuxif.AddInterfaceToLinuxBridge(peerName, spsEndBridge)
+
+	if err != nil {
+		return fmt.Errorf("failed to add %s to bridge %s: %v", peerName, spsEndBridge, err)
+	}
+
+	return nil
 }
