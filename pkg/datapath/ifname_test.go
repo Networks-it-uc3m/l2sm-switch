@@ -129,8 +129,8 @@ func TestIsManaged(t *testing.T) {
 		t.Fatalf("IsManaged(): expected false for non-ls name")
 	}
 
-	ifid1 := New("zzzzz")
-	ifid2 := New("fsdfasd")
+	ifid1 := NewIfId("zzzzz")
+	ifid2 := NewIfId("fsdfasd")
 	inter := ifid1.Port(10)
 	inter2 := ifid2.Port(10)
 	if !ifid1.IsManaged(inter) {

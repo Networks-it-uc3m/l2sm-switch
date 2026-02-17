@@ -32,7 +32,7 @@ var iftypes = map[IfType]string{
 	TypeUnknown: "UNKNOWN",
 }
 
-func New(switchName string) Ifid {
+func NewIfId(switchName string) Ifid {
 	id := GenerateID(switchName)
 	if len(id) < TOKEN_LEN {
 		id = id + strings.Repeat("0", (TOKEN_LEN-len(id)))

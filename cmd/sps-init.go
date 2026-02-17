@@ -73,7 +73,7 @@ to quickly create a Cobra application.`,
 
 		fmt.Println("Switch initialized and connected to the controller.")
 
-		ports, err := ctr.GetOrphanInterfaces(dp.New(switchName))
+		ports, err := ctr.GetOrphanInterfaces(dp.NewIfId(switchName))
 		if err != nil {
 
 			fmt.Println("error retrieving the existing interfaces. err: %v")
@@ -97,7 +97,7 @@ to quickly create a Cobra application.`,
 			if err != nil {
 				fmt.Printf("Error parsing ip address for probing port: %v", err)
 			} else {
-				if err = ctr.AddProbingPort(ip, dp.New(switchName)); err != nil {
+				if err = ctr.AddProbingPort(ip, dp.NewIfId(switchName)); err != nil {
 					fmt.Printf("error adding probing port: %v\n", err)
 				}
 

@@ -64,7 +64,7 @@ func (s *server) CreateVxlan(ctx context.Context, req *nedpb.CreateVxlanRequest)
 // AttachInterface implements nedpb.VxlanServiceServer
 func (s *server) AttachInterface(ctx context.Context, req *nedpb.AttachInterfaceRequest) (*nedpb.AttachInterfaceResponse, error) {
 
-	ifid := dp.New(s.Ctr.GetSwitchName())
+	ifid := dp.NewIfId(s.Ctr.GetSwitchName())
 
 	p, err := s.Ctr.GetNewPort(ifid)
 	if err != nil {
