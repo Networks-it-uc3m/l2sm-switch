@@ -289,7 +289,7 @@ func (ctr *Controller) GetOrphanInterfaces(ifid dp.Ifid) ([]plsv1.Port, error) {
 		}
 
 		id, _, _, parseErr := datapath.Parse(name)
-		if parseErr == nil {
+		if parseErr != nil {
 			continue
 		}
 		ports = append(ports, plsv1.Port{Name: name, Id: &id})
