@@ -27,7 +27,7 @@ const (
 
 var iftypes = map[IfType]string{
 	TypePort:    "",
-	TypeProbe:   "probe",
+	TypeProbe:   "p",
 	TypePeer:    "peer",
 	TypeUnknown: "UNKNOWN",
 }
@@ -43,6 +43,7 @@ func (ifid *Ifid) Port(id int) string {
 	return fmt.Sprintf("%s%s%d", PREFIX, ifid.token, id)
 }
 
+// todo: reduce name
 func (ifid *Ifid) Probe(id int) string {
 	return fmt.Sprintf("%s%s%s%d", PREFIX, ifid.token, iftypes[TypeProbe], id)
 }
